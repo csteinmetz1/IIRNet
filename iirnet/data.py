@@ -25,12 +25,12 @@ class IIRFilterDataset(torch.utils.data.Dataset):
     self.stats = {}
   
     if standard_norm:
-      print("Computing normalization factors...")
-      coefs = np.zeros((self.sample_size, (self.filter_order + 1) * 2))
-      mags = np.zeros((self.sample_size, self.num_points))
-      phss = np.zeros((self.sample_size, self.num_points))
+        print("Computing normalization factors...")
+        coefs = np.zeros((self.sample_size, (self.filter_order + 1) * 2))
+        mags = np.zeros((self.sample_size, self.num_points))
+        phss = np.zeros((self.sample_size, self.num_points))
 
-      for n in range(self.sample_size):
+    for n in range(self.sample_size):
         sys.stdout.write(f"* {n+1}/{self.sample_size}\r")
         sys.stdout.flush()
         coef, mag, phs = self.generate_filter()
@@ -39,32 +39,31 @@ class IIRFilterDataset(torch.utils.data.Dataset):
         phss[n,:] = phs
 
       # compute statistics
-      self.stats["coef"] = {
-          "mean" : np.mean(coefs, axis=0),
-          "std" : np.std(coefs, axis=0)
-      }
-      self.stats["mag"] = {
-          "mean" : np.mean(mags, axis=0),
-          "std" : np.std(mags, axis=0)
-      }
-      self.stats["phs"] = {
-          "mean" : np.mean(phss, axis=0),
-          "std" : np.std(phss, axis=0)
-      }
+    self.stats["coef"] = {
+        "mean" : np.mean(coefs, axis=0),
+        "std" : np.std(coefs, axis=0)
+    }
+    self.stats["mag"] = {
+        "mean" : np.mean(mags, axis=0),
+        "std" : np.std(mags, axis=0)
+    }
+    self.stats["phs"] = {
+        "mean" : np.mean(phss, axis=0),
+        "std" : np.std(phss, axis=0)
+    }
 
   def __len__(self):
     return self.num_examples
 
   def __getitem__(self, idx):
-
     # generate random filter coeffiecents
     coef, mag, phs = self.generate_filter()
     
     # apply normalization
     if self.stats is not None:
-      #coef = (coef - self.stats["coef"]["mean"]) / self.stats["coef"]["std"] 
-      mag = (mag - self.stats["mag"]["mean"]) / self.stats["mag"]["std"] 
-      phs = (phs - self.stats["phs"]["mean"]) / self.stats["phs"]["std"] 
+        #coef = (coef - self.stats["coef"]["mean"]) / self.stats["coef"]["std"] 
+        mag = (mag - self.stats["mag"]["mean"]) / self.stats["mag"]["std"] 
+        phs = (phs - self.stats["phs"]["mean"]) / self.stats["phs"]["std"] 
 
     # convert to float32
     mag = mag.astype('float32')
@@ -77,10 +76,10 @@ class IIRFilterDataset(torch.utils.data.Dataset):
     """ Generate a random filter along with its magnitude and phase response.
     
     Returns:
-      coef (ndarray): Recursive filter coeffients stored as [b0, b1, ..., bN, a0, a1, ..., aN].
-      mag (ndarray): Magnitude response of the filter (linear) of `num_points`.
-      phs (ndarray): Phase response of the filter (unwraped) of 'num_points`.
-    
+        coef (ndarray): Recursive filter coeffients stored as [b0, b1, ..., bN, a0, a1, ..., aN].
+        mag (ndarray): Magnitude response of the filter (linear) of `num_points`.
+        phs (ndarray): Phase response of the filter (unwraped) of 'num_points`.
+
     """
     # first generate random coefs
     # we lay out coefs in an array [b0, b1, b2, a0, a1, a2]
