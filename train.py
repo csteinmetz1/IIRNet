@@ -3,40 +3,52 @@ from argparse import ArgumentParser
 import pytorch_lightning as pl
 
 from iirnet.data import IIRFilterDataset
-from iirnet.model import IIRNet
+from iirnet.base import IIRNet
+from iirnet.mlp import MLPModel
+from iirnet.lstm import LSTMModel
 
 parser = ArgumentParser()
 
 parser.add_argument('--shuffle', action="store_true")
 parser.add_argument('--batch_size', type=int, default=128)
 parser.add_argument('--num_workers', type=int, default=0)
+parser.add_argument('--model_name', type=str, default='mlp', help='mlp or lstm')
 
-parser = IIRNet.add_model_specific_args(parser)     # add model specific args
+temp_args, _ = parser.parse_known_args()
+
+# let the model add what it wants
+if temp_args.model_name == 'mlp':
+    parser = MLPModel.add_model_specific_args(parser)
+elif temp_args.model_name == 'lstm':
+    parser = LSTMModel.add_model_specific_args(parser)
+
 parser = pl.Trainer.add_argparse_args(parser)       # add all the available trainer options to argparse
 args = parser.parse_args()                          # parse them args                      
 
 num_examples = 10000
-num_points = 64
 
 # init the trainer and model 
 trainer = pl.Trainer(max_epochs=10, auto_lr_find=False)
 
 # setup the dataloaders
-train_dataset = IIRFilterDataset(num_points=num_points, num_examples=num_examples)
+train_dataset = IIRFilterDataset(num_points=args.num_points, num_examples=num_examples)
 train_dataloader = torch.utils.data.DataLoader(train_dataset, 
                                                shuffle=args.shuffle,
                                                batch_size=args.batch_size,
                                                num_workers=args.num_workers)
 
 # build the model
-model = IIRNet(num_points=num_points)
+if args.model_name == 'mlp':
+    model = MLPModel(**vars(args))
+elif args.model_name == 'lstm':
+    model = LSTMModel(**vars(args))
 
 # Run learning rate finder
 #lr_finder = trainer.tuner.lr_find(model, train_dataloader, min_lr=1e-08, max_lr=0.01)
 # Pick point based on plot, or get suggestion
 #new_lr = lr_finder.suggestion()
 # update hparams of the model
-model.hparams.lr = 0.001
+#model.hparams.lr = 0.001
 #print(new_lr)
 
 # train!
