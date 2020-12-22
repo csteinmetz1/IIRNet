@@ -16,7 +16,6 @@ parser.add_argument('--model_name', type=str, default='mlp', help='mlp or lstm')
 parser.add_argument('--num_train_examples', type=int, default=100000)
 parser.add_argument('--num_val_examples', type=int, default=1000)
 
-
 temp_args, _ = parser.parse_known_args()
 
 # let the model add what it wants
@@ -31,7 +30,7 @@ args = parser.parse_args()                          # parse them args
 num_examples = 10000
 
 # init the trainer and model 
-trainer = pl.Trainer(max_epochs=20, auto_lr_find=False)
+trainer = pl.Trainer.from_argparse_args(args)
 
 # setup the dataloaders
 train_dataset = IIRFilterDataset(num_points=args.num_points, 
