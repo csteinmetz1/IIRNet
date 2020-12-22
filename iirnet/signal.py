@@ -2,15 +2,25 @@ import torch
 import numpy as np
 
 def polyval(p, x):
-    """ Evalute a polynomial at specific values. """
+    """ Evalute a polynomial at specific values. 
+    
+    Args:
+        p (batch, coeffs)
+        x (values)
+
+    Returns:
+        v (batch, values)
+
+    """
+    bs, N = p.size()
     val = 0
-    for idx in range(len(p)-1):
-        val = (val+p[idx]) * x
-    return val + p[len(p)-1]
+    for i in range(N-1):
+        print((val+p[:,i]).shape, x.shape)
+        val = (val+p[:,i]) * x.view(-1,1)
+    return val + p[:,N-1]
 
 def bpolyval(p, x):
     """ Evalute a batch of polynomial at specific values. """
-    raise NotImplementedError("Hold on...")
     val = 0
     N = p[:,0].size() # polynomial order
     for idx in range(len(p)-1):
@@ -90,11 +100,19 @@ def sosfreqz(sos, worN=512, whole=False, fs=2*np.pi, log=False):
 
 def _validate_sos(sos, eps=1e-8):
     """ Helper to validate a SOS input. """
-    if sos.ndim != 2:
-        raise ValueError('sos array must be 2D')
-    n_sections, m = sos.shape
+
+    if sos.ndim == 2:
+        n_sections, m = sos.shape
+        bs = 0
+    elif sos.ndim == 3:
+        bs, n_sections, m = sos.shape
+        # flatten batch into sections dim
+        sos = sos.view(-1,6)
+    else:
+        raise ValueError('sos array must be shape (batch, n_sections, 6) or (n_sections, 6)')
+
     if m != 6:
-        raise ValueError('sos array must be shape (n_sections, 6)')
+        raise ValueError('sos array must be shape (batch, n_sections, 6) or (n_sections, 6)')
 
     # remove zero padded sos
     sos = sos[sos.sum(-1) != 0,:]
@@ -105,5 +123,9 @@ def _validate_sos(sos, eps=1e-8):
 
     if not (sos[:, 3] == 1).all():
         raise ValueError('sos[:, 3] should be all ones')
+
+    # fold sections back into batch dim
+    if bs > 0:
+        sos = sos.view(bs,-1,6)
 
     return sos, n_sections
