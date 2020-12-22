@@ -10,6 +10,7 @@ certifi==2020.12.5
 cffi==1.14.3
 chardet==4.0.0
 cycler==0.10.0
+dataclasses==0.8
 decorator==4.4.2
 defusedxml==0.6.0
 entrypoints==0.3
@@ -19,8 +20,9 @@ google-auth==1.24.0
 google-auth-oauthlib==0.4.2
 grpcio==1.34.0
 idna==2.10
+importlib-metadata==3.3.0
 ipykernel==5.3.4
-ipython==7.19.0
+ipython==7.16.1
 ipython-genutils==0.2.0
 ipywidgets==7.5.1
 jedi==0.17.2
@@ -75,14 +77,16 @@ tensorboard==2.4.0
 tensorboard-plugin-wit==1.7.0
 terminado==0.9.1
 testpath==0.4.4
-torch==1.7.1
+torch==1.8.0.dev20201222
+torchaudio==0.8.0.dev20201222
 torchvision==0.8.2
 tornado==6.1
 tqdm==4.54.1
-traitlets==5.0.5
+traitlets==4.3.3
 typing-extensions==3.7.4.3
 urllib3==1.26.2
 wcwidth==0.2.5
 webencodings==0.5.1
 Werkzeug==1.0.1
 widgetsnbextension==3.5.1
+zipp==3.4.0
