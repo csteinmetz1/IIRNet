@@ -10,7 +10,7 @@ class MLPModel(IIRNet):
                 num_points = 512,
                 num_layers = 4,
                 hidden_dim = 128,
-                filter_order = 2,
+                max_order = 10,
                 lr = 3e-4,
                 **kwargs):
         super(MLPModel, self).__init__()
@@ -20,20 +20,25 @@ class MLPModel(IIRNet):
         self.layers = torch.nn.ModuleList()
 
         for n in range(self.hparams.num_layers):
-        in_features = self.hparams.hidden_dim if n != 0 else self.hparams.num_points
-        out_features = self.hparams.hidden_dim
-        self.layers.append(torch.nn.Sequential(
-            torch.nn.Linear(in_features, out_features),
-            torch.nn.PReLU(),
-        ))
+            in_features = self.hparams.hidden_dim if n != 0 else self.hparams.num_points*2
+            out_features = self.hparams.hidden_dim
+            self.layers.append(torch.nn.Sequential(
+                torch.nn.Linear(in_features, out_features),
+                torch.nn.PReLU(),
+            ))
 
-        n_coef = (self.hparams.filter_order + 1) * 2
+        n_coef = (self.hparams.max_order//2) * 6
         self.layers.append(torch.nn.Linear(out_features, n_coef))
 
-    def forward(self, mag, phs=None):
-        x = mag
+    def forward(self, real, imag):
+        x = torch.cat((real, imag), dim=-1)
         for layer in self.layers:
-        x = layer(x) 
+            x = layer(x) 
+
+        # reshape into sos format (n_section, (b0, b1, b2, a0, a1, a2))
+        n_sections = self.hparams.max_order//2
+        x = x.view(-1,n_sections,6)
+
         return x
 
     def configure_optimizers(self):
@@ -47,7 +52,7 @@ class MLPModel(IIRNet):
         parser.add_argument('--num_points', type=int, default=512)
         parser.add_argument('--num_layers', type=int, default=4)
         parser.add_argument('--hidden_dim', type=int, default=128)
-        parser.add_argument('--filter_order', type=int, default=2)
+        parser.add_argument('--max_order', type=int, default=10)
         # --- training related ---
         parser.add_argument('--lr', type=float, default=1e-3)
 

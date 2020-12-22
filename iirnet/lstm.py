@@ -2,13 +2,15 @@ import torch
 import pytorch_lightning as pl
 from argparse import ArgumentParser
 
-class LSTMModel(pl.LightningModule):
+from .base import IIRNet
+
+class LSTMModel(IIRNet):
     """ LSTM module. """
     def __init__(self, 
                 num_points = 512,
                 num_layers = 1,
                 hidden_dim = 128,
-                filter_order = 2,
+                max_order = 10,
                 lr = 3e-4,
                 **kwargs):
         super(LSTMModel, self).__init__()
@@ -18,14 +20,20 @@ class LSTMModel(pl.LightningModule):
         self.lstm = torch.nn.LSTM(self.hparams.num_points,
                                 self.hparams.hidden_dim,
                                 self.hparams.num_layers)
-
-        n_coef = (self.hparams.filter_order + 1) * 2
-        self.output = torch.nn.Linear(self.hparams.hidden_dim, n_coef)
+        self.output = torch.nn.Linear(self.hparams.hidden_dim, 6)
 
     def forward(self, mag, phs=None):
         
-        out, _ = self.lstm(mag)
-        out = self.output(out)
+        mag = mag.unsqueeze(-1) # add sequence dim
+        # create a sequence of max length 
+        seq = mag.permute(2,0,1)
+        seq = seq.repeat(self.hparams.max_order//2,1,1)
+
+        out, _ = self.lstm(seq)
+        sos = self.output(out)
+        sos = sos.permute(1,0,2)
+
+        return sos
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
@@ -38,6 +46,7 @@ class LSTMModel(pl.LightningModule):
         parser.add_argument('--num_points', type=int, default=512)
         parser.add_argument('--num_layers', type=int, default=4)
         parser.add_argument('--hidden_dim', type=int, default=128)
+        parser.add_argument('--max_order', type=int, default=10)
         # --- training related ---
         parser.add_argument('--lr', type=float, default=1e-3)
 

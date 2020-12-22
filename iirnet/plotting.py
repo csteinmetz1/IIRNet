@@ -6,13 +6,12 @@ import scipy.signal
 import matplotlib.pyplot as plt
 from torchvision.transforms import ToTensor
 
+import iirnet.signal as signal
+
 def plot_compare_response(pred_coef, target_coef, num_points=512, eps=1e-8, fs=44100):
 
-    pred_coef *= 1
-    target_coef *= 1
-
-    w_pred, h_pred = scipy.signal.freqz(b=pred_coef[:3], a=pred_coef[3:], worN=num_points, fs=fs)
-    w_target, h_target = scipy.signal.freqz(b=target_coef[:3], a=target_coef[3:], worN=num_points, fs=fs)
+    w_pred, h_pred = signal.sosfreqz(pred_coef, worN=num_points, fs=fs)
+    w_target, h_target = signal.sosfreqz(target_coef, worN=num_points, fs=fs)
 
     fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(8, 8))
 

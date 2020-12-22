@@ -2,20 +2,23 @@ import torch
 import pytorch_lightning as pl
 from argparse import ArgumentParser
 
+from .loss import LogMagFrequencyLoss, ComplexLoss
 from .plotting import plot_compare_response
 
 class IIRNet(pl.LightningModule):
     """ Base IIRNet module. """
     def __init__(self, **kwargs):
         super(IIRNet, self).__init__()
+        self.magfreqzloss = LogMagFrequencyLoss()
+        self.complexfreqzloss = ComplexLoss()
 
     def forward(self, x):
         pass
 
     def training_step(self, batch, batch_idx):
-        mag, phs, coef = batch
-        pred_coef = self(mag)
-        loss = torch.nn.functional.mse_loss(pred_coef, coef)
+        mag, phs, real, imag, sos = batch
+        pred_sos = self(real, imag)
+        loss = self.complexfreqzloss(pred_sos, sos)
 
         self.log('train_loss', 
                     loss, 
@@ -26,17 +29,17 @@ class IIRNet(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        mag, phs, coef = batch
-        pred_coef = self(mag)
-        loss = torch.nn.functional.mse_loss(pred_coef, coef)
-        
+        mag, phs, real, imag, sos = batch
+        pred_sos = self(real, imag)
+        loss = self.complexfreqzloss(pred_sos, sos)
+
         self.log('val_loss', loss)
 
         # move tensors to cpu for logging
         outputs = {
-            "pred_coef" : pred_coef.cpu().numpy(),
-            "coef": coef.cpu().numpy(),
-            "mag"  : mag.cpu().numpy()}
+            "pred_sos" : pred_sos.cpu(),
+            "sos": sos.cpu(),
+            "mag"  : mag.cpu()}
 
         return outputs
 
@@ -44,10 +47,10 @@ class IIRNet(pl.LightningModule):
         # flatten the output validation step dicts to a single dict
         outputs = res = {k: v for d in validation_step_outputs for k, v in d.items()} 
 
-        pred_coef = outputs["pred_coef"][0]
-        coef = outputs["coef"][0]
+        pred_sos = outputs["pred_sos"][0]
+        sos = outputs["sos"][0]
 
-        self.logger.experiment.add_image("mag", plot_compare_response(pred_coef, coef), self.global_step)
+        self.logger.experiment.add_image("mag", plot_compare_response(pred_sos, sos), self.global_step)
 
     # add any model hyperparameters here
     @staticmethod

@@ -13,6 +13,9 @@ parser.add_argument('--shuffle', action="store_true")
 parser.add_argument('--batch_size', type=int, default=128)
 parser.add_argument('--num_workers', type=int, default=0)
 parser.add_argument('--model_name', type=str, default='mlp', help='mlp or lstm')
+parser.add_argument('--num_train_examples', type=int, default=100000)
+parser.add_argument('--num_val_examples', type=int, default=1000)
+
 
 temp_args, _ = parser.parse_known_args()
 
@@ -28,11 +31,21 @@ args = parser.parse_args()                          # parse them args
 num_examples = 10000
 
 # init the trainer and model 
-trainer = pl.Trainer(max_epochs=10, auto_lr_find=False)
+trainer = pl.Trainer(max_epochs=20, auto_lr_find=False)
 
 # setup the dataloaders
-train_dataset = IIRFilterDataset(num_points=args.num_points, num_examples=num_examples)
+train_dataset = IIRFilterDataset(num_points=args.num_points, 
+                                 max_order=args.max_order, 
+                                 num_examples=args.num_train_examples)
 train_dataloader = torch.utils.data.DataLoader(train_dataset, 
+                                               shuffle=args.shuffle,
+                                               batch_size=args.batch_size,
+                                               num_workers=args.num_workers)
+
+val_dataset = IIRFilterDataset(num_points=args.num_points, 
+                                 max_order=args.max_order, 
+                                 num_examples=args.num_val_examples)
+val_dataloader = torch.utils.data.DataLoader(val_dataset, 
                                                shuffle=args.shuffle,
                                                batch_size=args.batch_size,
                                                num_workers=args.num_workers)
@@ -52,4 +65,4 @@ elif args.model_name == 'lstm':
 #print(new_lr)
 
 # train!
-trainer.fit(model, train_dataloader, train_dataloader)
+trainer.fit(model, train_dataloader, val_dataloader)
