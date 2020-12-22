@@ -11,6 +11,7 @@ class MLPModel(IIRNet):
                 num_layers = 4,
                 hidden_dim = 128,
                 max_order = 10,
+                normalization = "none",
                 lr = 3e-4,
                 **kwargs):
         super(MLPModel, self).__init__()
@@ -22,16 +23,30 @@ class MLPModel(IIRNet):
         for n in range(self.hparams.num_layers):
             in_features = self.hparams.hidden_dim if n != 0 else self.hparams.num_points*2
             out_features = self.hparams.hidden_dim
-            self.layers.append(torch.nn.Sequential(
-                torch.nn.Linear(in_features, out_features),
-                torch.nn.PReLU(),
-            ))
+            if n+1 == self.hparams.num_layers: # no activation at last layer
+                self.layers.append(torch.nn.Sequential(
+                    torch.nn.Linear(in_features, out_features),
+                ))
+            else:
+                self.layers.append(torch.nn.Sequential(
+                    torch.nn.Linear(in_features, out_features),
+                    torch.nn.PReLU(),
+                ))
 
         n_coef = (self.hparams.max_order//2) * 6
         self.layers.append(torch.nn.Linear(out_features, n_coef))
 
+        if self.hparams.normalization == "bn":
+            self.bn = torch.nn.BatchNorm1d(self.hparams.num_points*2)
+
     def forward(self, real, imag):
         x = torch.cat((real, imag), dim=-1)
+
+        if self.hparams.normalization == "tanh":
+            x = torch.tanh(x)
+        elif self.hparams.normalization == "bn":
+            x = self.bn(x)
+
         for layer in self.layers:
             x = layer(x) 
 
@@ -51,8 +66,9 @@ class MLPModel(IIRNet):
         # --- model related ---
         parser.add_argument('--num_points', type=int, default=512)
         parser.add_argument('--num_layers', type=int, default=4)
-        parser.add_argument('--hidden_dim', type=int, default=128)
+        parser.add_argument('--hidden_dim', type=int, default=256)
         parser.add_argument('--max_order', type=int, default=10)
+        parser.add_argument('--normalization', type=str, default="none")
         # --- training related ---
         parser.add_argument('--lr', type=float, default=1e-3)
 

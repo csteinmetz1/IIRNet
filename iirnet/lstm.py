@@ -9,9 +9,9 @@ class LSTMModel(IIRNet):
     def __init__(self, 
                 num_points = 512,
                 num_layers = 1,
-                hidden_dim = 128,
+                hidden_dim = 32,
                 max_order = 10,
-                lr = 3e-4,
+                lr = 1e-4,
                 **kwargs):
         super(LSTMModel, self).__init__()
 
@@ -30,8 +30,8 @@ class LSTMModel(IIRNet):
         seq = seq.repeat(self.hparams.max_order//2,1,1)
 
         out, _ = self.lstm(seq)
-        sos = self.output(out)
-        sos = sos.permute(1,0,2)
+        out = self.output(out)
+        sos = out.permute(1,0,2)
 
         return sos
 
@@ -45,7 +45,7 @@ class LSTMModel(IIRNet):
         # --- model related ---
         parser.add_argument('--num_points', type=int, default=512)
         parser.add_argument('--num_layers', type=int, default=4)
-        parser.add_argument('--hidden_dim', type=int, default=128)
+        parser.add_argument('--hidden_dim', type=int, default=32)
         parser.add_argument('--max_order', type=int, default=10)
         # --- training related ---
         parser.add_argument('--lr', type=float, default=1e-3)

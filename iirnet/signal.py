@@ -64,7 +64,7 @@ def mag(x, eps=1e-8):
 
     return mag
 
-def sosfreqz(sos, worN=512, whole=False, fs=2*np.pi):
+def sosfreqz(sos, worN=512, whole=False, fs=2*np.pi, log=False):
     """ Compute the frequency response of a digital filter in SOS format. 
     
     Args:
@@ -83,7 +83,7 @@ def sosfreqz(sos, worN=512, whole=False, fs=2*np.pi):
     h = 1.
     for row in torch.chunk(sos, n_sections, dim=0):
         row = row.squeeze()
-        w, rowh = freqz(row[:3], row[3:], worN=worN, whole=whole, fs=fs)
+        w, rowh = freqz(row[:3], row[3:], worN=worN, whole=whole, fs=fs, log=log)
         h *= rowh
 
     return w, h
