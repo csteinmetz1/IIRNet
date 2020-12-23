@@ -30,23 +30,31 @@ class ComplexLoss(torch.nn.Module):
     def forward(self, input, target):
         bs = input.size(0)
         loss = 0
-        for n in range(bs):
 
-            input_sos = input[n,...]
-            target_sos = target[n,...]
+        if False:
+            for n in range(bs):
 
-            if self.threshold is not None:
-                input_sos = self.apply_threshold(input_sos)
-                target_sos = self.apply_threshold(target_sos)
+                input_sos = input[n,...]
+                target_sos = target[n,...]
 
-            w, input_h = signal.sosfreqz(input_sos, log=True)
-            w, target_h = signal.sosfreqz(target_sos, log=True)
+                if self.threshold is not None:
+                    input_sos = self.apply_threshold(input_sos)
+                    target_sos = self.apply_threshold(target_sos)
 
+                w, input_h = signal.sosfreqz(input_sos, log=True)
+                w, target_h = signal.sosfreqz(target_sos, log=True)
+
+                real_loss = torch.nn.functional.l1_loss(input_h.real, target_h.real)
+                imag_loss = torch.nn.functional.l1_loss(input_h.imag, target_h.imag)
+                loss += real_loss + imag_loss
+        else:
+            w, input_h = signal.sosfreqz(input, log=True)
+            w, target_h = signal.sosfreqz(target, log=True)
             real_loss = torch.nn.functional.l1_loss(input_h.real, target_h.real)
             imag_loss = torch.nn.functional.l1_loss(input_h.imag, target_h.imag)
-            loss += real_loss + imag_loss
-        
-        return loss / bs
+            loss = real_loss + imag_loss
+
+        return torch.mean(loss)
         
     def apply_threshold(self, sos):
         out_sos = sos[sos.sum(-1) > self.threshold,:]

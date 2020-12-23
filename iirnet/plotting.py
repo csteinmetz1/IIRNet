@@ -15,8 +15,8 @@ def plot_compare_response(pred_coef, target_coef, num_points=512, eps=1e-8, fs=4
 
     fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(8, 8))
 
-    mag_pred = 20 * np.log10(np.abs(h_pred) + 1e-8)
-    mag_target = 20 * np.log10(np.abs(h_target) + 1e-8)
+    mag_pred = 20 * np.log10(np.abs(h_pred.squeeze()) + 1e-8)
+    mag_target = 20 * np.log10(np.abs(h_target.squeeze()) + 1e-8)
     ax[0].plot(w_target, mag_target, color='b', label="target")
     ax[0].plot(w_pred, mag_pred, color='r', label="pred")
     ax[0].set_xscale('log')
@@ -30,8 +30,8 @@ def plot_compare_response(pred_coef, target_coef, num_points=512, eps=1e-8, fs=4
     ax[0].spines['bottom'].set_visible(False)
     ax[0].spines['left'].set_visible(False)
 
-    ang_pred = np.unwrap(np.angle(h_pred))
-    ang_target = np.unwrap(np.angle(h_target))
+    ang_pred = np.unwrap(np.angle(h_pred.squeeze()))
+    ang_target = np.unwrap(np.angle(h_target.squeeze()))
     ax[1].plot(w_target, ang_target, color='b', label="target")
     ax[1].plot(w_pred, ang_pred, color='r', label="pred")
     ax[1].set_ylabel('Angle (radians)')

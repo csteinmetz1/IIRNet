@@ -13,7 +13,7 @@ def polyval(p, x):
 
     """
     bs, N = p.size()
-    val = 0
+    val = torch.tensor([0], device=p.device)
     for i in range(N-1):
         val = (val+p[:,i]) * x.view(-1,1)
     return (val + p[:,N-1]).T
@@ -42,7 +42,7 @@ def freqz(b, a=1, worN=512, whole=False, fs=2*np.pi, log=False, include_nyquist=
     else:
         w = np.linspace(0, lastpoint, worN, endpoint=include_nyquist and not whole)
 
-    w = torch.tensor(w)
+    w = torch.tensor(w, device=b.device)
 
     if a.size() == 1: 
         n_fft = worN if whole else worN * 2 
@@ -51,9 +51,10 @@ def freqz(b, a=1, worN=512, whole=False, fs=2*np.pi, log=False, include_nyquist=
 
     if h is None:  
         zm1 = torch.exp(-1j * w)
-        print(b.shape, zm1.shape)
         h = (polyval(b, zm1) /
             polyval(a, zm1))
+
+    # need to catch NaNs here
 
     w = w*fs/(2*np.pi) 
 
@@ -89,7 +90,10 @@ def sosfreqz(sos, worN=512, whole=False, fs=2*np.pi, log=False):
         sos = sos.unsqueeze(0)
 
     for row in torch.chunk(sos, n_sections, dim=1):
-        row = row.view(bs, 6)
+        # remove batch elements that are NaN
+        row = torch.nan_to_num(row)
+        print(row)
+        row = row.view(-1, 6)
         w, rowh = freqz(row[:,:3], row[:,3:], worN=worN, whole=whole, fs=fs, log=log)
         h *= rowh
 
@@ -104,7 +108,7 @@ def _validate_sos(sos, eps=1e-8):
     elif sos.ndim == 3:
         bs, n_sections, m = sos.shape
         # flatten batch into sections dim
-        sos = sos.view(-1,6)
+        sos = sos.view(bs*n_sections,6)
     else:
         raise ValueError('sos array must be shape (batch, n_sections, 6) or (n_sections, 6)')
 
@@ -112,14 +116,14 @@ def _validate_sos(sos, eps=1e-8):
         raise ValueError('sos array must be shape (batch, n_sections, 6) or (n_sections, 6)')
 
     # remove zero padded sos
-    sos = sos[sos.sum(-1) != 0,:]
+    #sos = sos[sos.sum(-1) != 0,:]
 
     # normalize by a0
     a0 = sos[:,3].unsqueeze(-1)
     sos = sos/a0
 
-    if not (sos[:, 3] == 1).all():
-        raise ValueError('sos[:, 3] should be all ones')
+    #if not (sos[:, 3] == 1).all():
+    #    raise ValueError('sos[:, 3] should be all ones')
 
     # fold sections back into batch dim
     if bs > 0:
