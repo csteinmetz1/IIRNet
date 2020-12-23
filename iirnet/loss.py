@@ -50,8 +50,8 @@ class ComplexLoss(torch.nn.Module):
         else:
             w, input_h = signal.sosfreqz(input, log=False)
             w, target_h = signal.sosfreqz(target, log=False)
-            real_loss = torch.nn.functional.l1_loss(input_h.real, target_h.real)
-            imag_loss = torch.nn.functional.l1_loss(input_h.imag, target_h.imag)
+            real_loss = torch.nn.functional.mse_loss(input_h.real, target_h.real)
+            imag_loss = torch.nn.functional.mse_loss(input_h.imag, target_h.imag)
             loss = real_loss + imag_loss
 
         return torch.mean(loss)
