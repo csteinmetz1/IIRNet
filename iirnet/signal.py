@@ -15,17 +15,8 @@ def polyval(p, x):
     bs, N = p.size()
     val = 0
     for i in range(N-1):
-        print((val+p[:,i]).shape, x.shape)
         val = (val+p[:,i]) * x.view(-1,1)
-    return val + p[:,N-1]
-
-def bpolyval(p, x):
-    """ Evalute a batch of polynomial at specific values. """
-    val = 0
-    N = p[:,0].size() # polynomial order
-    for idx in range(len(p)-1):
-        val = (val+p[:,idx]) * x
-    return val + p[len(p)-1]
+    return (val + p[:,N-1]).T
 
 def roots(p):
     n = p.size(-1)
@@ -60,6 +51,7 @@ def freqz(b, a=1, worN=512, whole=False, fs=2*np.pi, log=False, include_nyquist=
 
     if h is None:  
         zm1 = torch.exp(-1j * w)
+        print(b.shape, zm1.shape)
         h = (polyval(b, zm1) /
             polyval(a, zm1))
 
@@ -86,14 +78,19 @@ def sosfreqz(sos, worN=512, whole=False, fs=2*np.pi, log=False):
     
     """
 
-    sos, n_sections = _validate_sos(sos)
+    sos, bs, n_sections = _validate_sos(sos)
 
     if n_sections == 0:
         raise ValueError('Cannot compute frequencies with no sections')
     h = 1.
-    for row in torch.chunk(sos, n_sections, dim=0):
-        row = row.squeeze()
-        w, rowh = freqz(row[:3], row[3:], worN=worN, whole=whole, fs=fs, log=log)
+
+    # check for batches (if none add batch dim)
+    if bs == 0:
+        sos = sos.unsqueeze(0)
+
+    for row in torch.chunk(sos, n_sections, dim=1):
+        row = row.view(bs, 6)
+        w, rowh = freqz(row[:,:3], row[:,3:], worN=worN, whole=whole, fs=fs, log=log)
         h *= rowh
 
     return w, h
@@ -128,4 +125,4 @@ def _validate_sos(sos, eps=1e-8):
     if bs > 0:
         sos = sos.view(bs,-1,6)
 
-    return sos, n_sections
+    return sos, bs, n_sections
