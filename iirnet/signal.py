@@ -92,7 +92,6 @@ def sosfreqz(sos, worN=512, whole=False, fs=2*np.pi, log=False):
     for row in torch.chunk(sos, n_sections, dim=1):
         # remove batch elements that are NaN
         row = torch.nan_to_num(row)
-        print(row)
         row = row.view(-1, 6)
         w, rowh = freqz(row[:,:3], row[:,3:], worN=worN, whole=whole, fs=fs, log=log)
         h *= rowh

@@ -77,7 +77,7 @@ class IIRFilterDataset(torch.utils.data.Dataset):
     empty_sections = (self.max_order//2) - n_sections
     full_sos = torch.zeros(self.max_order//2,6)
     full_sos[:n_sections,:] = sos
-    full_sos[n_sections:,:] = torch.zeros(empty_sections,6)
+    full_sos[n_sections:,:] = torch.tensor([1.,0.,0.,1.,0.,0.]).repeat(empty_sections,1) #torch.zeros(empty_sections,6)
     sos = full_sos
     
     return mag, phs, real, imag, sos

@@ -66,7 +66,7 @@ class MLPModel(IIRNet):
         # --- model related ---
         parser.add_argument('--num_points', type=int, default=512)
         parser.add_argument('--num_layers', type=int, default=4)
-        parser.add_argument('--hidden_dim', type=int, default=256)
+        parser.add_argument('--hidden_dim', type=int, default=1024)
         parser.add_argument('--max_order', type=int, default=10)
         parser.add_argument('--normalization', type=str, default="none")
         # --- training related ---
