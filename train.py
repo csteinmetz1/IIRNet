@@ -14,7 +14,7 @@ parser.add_argument('--batch_size', type=int, default=128)
 parser.add_argument('--num_workers', type=int, default=0)
 parser.add_argument('--model_name', type=str, default='mlp', help='mlp or lstm')
 parser.add_argument('--num_train_examples', type=int, default=1000000)
-parser.add_argument('--num_val_examples', type=int, default=1000)
+parser.add_argument('--num_val_examples', type=int, default=10000)
 
 temp_args, _ = parser.parse_known_args()
 

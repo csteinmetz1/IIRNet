@@ -96,10 +96,13 @@ class IIRFilterDataset(torch.utils.data.Dataset):
     # in the future we will want to enforce some kind of normalization
     #coef = self.factor * (np.random.rand((self.filter_order + 1) * 2) * 2) - 1
 
+    btype = np.random.choice(['lowpass', 'highpass'])
+
     wn = float(loguniform.rvs(1e-3, 1e0))
-    rp = np.random.rand() * 10
+    rp = np.random.rand() * 20
     N = np.random.randint(1,self.max_order)
-    sos = scipy.signal.cheby1(N, rp, wn, output='sos')
+
+    sos = scipy.signal.cheby1(N, rp, wn, output='sos', btype=btype)
 
     w, h = scipy.signal.sosfreqz(sos, worN=self.num_points)
 

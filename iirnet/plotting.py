@@ -8,7 +8,50 @@ from torchvision.transforms import ToTensor
 
 import iirnet.signal as signal
 
-def plot_compare_response(pred_coef, target_coef, num_points=512, eps=1e-8, fs=44100):
+def plot_response_grid(pred_coefs, target_coefs, num_points=512, eps=1e-8, fs=44100):
+
+    ncols = 5
+    nrows = 5
+    pred_coefs = pred_coefs[:ncols*nrows]
+    target_coefs = target_coefs[:ncols*nrows]
+
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=(12, 12))
+    axs = axs.reshape(-1)
+
+    for idx, (p, t) in enumerate(zip(pred_coefs, target_coefs)):
+
+        w_pred, h_pred = signal.sosfreqz(p, worN=num_points, fs=fs)
+        w_target, h_target = signal.sosfreqz(t, worN=num_points, fs=fs)
+
+        mag_pred = 20 * np.log10(np.abs(h_pred.squeeze()) + 1e-8)
+        mag_target = 20 * np.log10(np.abs(h_target.squeeze()) + 1e-8)
+        axs[idx].plot(w_target, mag_target, color='b', label="target")
+        axs[idx].plot(w_pred, mag_pred, color='r', label="pred")
+        axs[idx].set_xscale('log')
+        axs[idx].set_ylim([-60, 40])
+        #axs[0].legend()
+        axs[idx].grid()
+        axs[idx].spines['top'].set_visible(False)
+        axs[idx].spines['right'].set_visible(False)
+        axs[idx].spines['bottom'].set_visible(False)
+        axs[idx].spines['left'].set_visible(False)
+
+        if (idx) % ncols == 0:
+            axs[idx].set_ylabel('Amplitude [dB]')
+
+        if idx > (nrows * ncols) - ncols:
+            axs[idx].set_xlabel('Frequency [Hz]')
+
+    plt.tight_layout()
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    image = PIL.Image.open(buf)
+    image = ToTensor()(image)#.unsqueeze(0)
+
+    return image
+
+def plot_compare_response(pred_coef, target_coef, num_points=512, eps=1e-8, fs=44100, ax=None):
 
     w_pred, h_pred = signal.sosfreqz(pred_coef, worN=num_points, fs=fs)
     w_target, h_target = signal.sosfreqz(target_coef, worN=num_points, fs=fs)

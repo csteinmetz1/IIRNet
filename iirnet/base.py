@@ -2,15 +2,15 @@ import torch
 import pytorch_lightning as pl
 from argparse import ArgumentParser
 
-from .loss import LogMagFrequencyLoss, ComplexLoss
-from .plotting import plot_compare_response
+import iirnet.loss as loss
+import iirnet.plotting as plotting
 
 class IIRNet(pl.LightningModule):
     """ Base IIRNet module. """
     def __init__(self, **kwargs):
         super(IIRNet, self).__init__()
-        self.magfreqzloss = LogMagFrequencyLoss()
-        self.complexfreqzloss = ComplexLoss()
+        self.magfreqzloss = loss.LogMagFrequencyLoss()
+        self.complexfreqzloss = loss.ComplexLoss()
 
     def forward(self, x):
         pass
@@ -44,13 +44,13 @@ class IIRNet(pl.LightningModule):
         return outputs
 
     def validation_epoch_end(self, validation_step_outputs):
-        # flatten the output validation step dicts to a single dict
-        outputs = res = {k: v for d in validation_step_outputs for k, v in d.items()} 
 
-        pred_sos = outputs["pred_sos"][0]
-        sos = outputs["sos"][0]
+        pred_sos = torch.split(validation_step_outputs[0]["pred_sos"], 1, dim=0)       
+        sos = torch.split(validation_step_outputs[0]["sos"], 1, dim=0)
 
-        self.logger.experiment.add_image("mag", plot_compare_response(pred_sos, sos), self.global_step)
+        #self.logger.experiment.add_image("mag", plotting.plot_compare_response(pred_sos, sos), self.global_step)
+        self.logger.experiment.add_image("mag-grid", plotting.plot_response_grid(pred_sos, sos), self.global_step)
+
 
     # add any model hyperparameters here
     @staticmethod
