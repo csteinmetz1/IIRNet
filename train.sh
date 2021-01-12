@@ -5,6 +5,5 @@ CUDA_VISIBLE_DEVICES=0 python train.py \
 --num_workers 16 \
 --lr 1e-6 \
 --gradient_clip_val 0.5 \
---hidden_dim 2048 \
+--hidden_dim 4096 \
 --shuffle \
---precision 16 \
