@@ -1,6 +1,7 @@
 import sys
 import torch
 import numpy as np
+from numpy.random import default_rng
 import scipy.signal
 from scipy.stats import loguniform
 
@@ -57,7 +58,7 @@ class IIRFilterDataset(torch.utils.data.Dataset):
 
   def __getitem__(self, idx):
     # generate random filter coeffiecents
-    mag, phs, real, imag, sos = self.generate_filter()
+    mag, phs, real, imag, sos = self.generate_nercissian_filter()
     
     # apply normalization
     if self.standard_norm:
@@ -112,3 +113,117 @@ class IIRFilterDataset(torch.utils.data.Dataset):
     imag = np.imag(h)
 
     return mag, phs, real, imag, sos
+
+  def generate_nercissian_filter(self):
+    """ Generate a random filter according to the method specified in Nercissian's paper
+
+    Returns: 
+        coef
+        mag
+        phs
+    """
+    rng = default_rng()
+    zeros = []
+    poles = []
+    sos_holder = []
+    f_min = 20
+    f_max = 20000
+    f_s = 48000 #Sampling frequency used in paper
+    g_min = -10
+    g_max = 10
+    q_min = 0.1
+    q_max_shelf = 1
+    q_max_peak = 3
+    bern_shelf = 1.0 #Probability shelf filters has non-zero dB gain paper=0.5
+    bern_peak = 1.0 #Probability shelf filters has non-zero dB gain paper=0.333
+    num_peaks = 3 #Number of peaking filters to use paper=10
+
+    ##Low Shelf Filter
+    f_low = rng.beta(0.25,5)*(f_max-f_min)+f_min
+    omega_low = 2*np.pi*f_low/f_s
+    g = rng.binomial(1,bern_shelf)*(rng.beta(5,5)*(g_max-g_min)+g_min)
+    q = rng.beta(1,5)*(q_max_shelf-q_min)+q_min
+    A = np.power(10,g/40)
+    alpha = np.sin(omega_low)*np.sqrt((A**2+1)*((1/q)-1)+2*A)
+
+    b0 = A*((A+1)-(A-1)*np.cos(omega_low)+alpha)
+    b1 = 2*A*((A-1)-(A+1)*np.cos(omega_low))
+    b2 = A*((A+1)-(A-1)*np.cos(omega_low)-alpha)
+
+    a0 = (A+1)+(A-1)*np.cos(omega_low)+alpha
+    a1 = -2*A*((A-1)+(A+1)*np.cos(omega_low))
+    a2 = (A+1)+(A-1)*np.cos(omega_low)-alpha
+
+    sos_poly = np.asarray([b0,b1,b2,a0,a1,a2])
+    sos_holder.append(sos_poly)
+    num_poly = np.asarray([b0,b1,b2])
+    zeros.append(num_poly)
+    den_poly = np.asarray([a0,a1,a2])
+    poles.append(den_poly)
+
+
+    ##High Shelf Filter
+    f_high = rng.beta(4,5)*(f_max-f_min)+f_min
+    omega_high = 2*np.pi*f_high/f_s
+    g = rng.binomial(1,bern_shelf)*(rng.beta(5,5)*(g_max-g_min)+g_min)
+    q = rng.beta(1,5)*(q_max_shelf-q_min)+q_min
+    A = np.power(10,g/40)
+    alpha = np.sin(omega_high)*np.sqrt((A**2+1)*((1/q)-1)+2*A)
+
+    b0 = A*((A+1)+(A-1)*np.cos(omega_high)+alpha)
+    b1 = -2*A*((A-1)+(A+1)*np.cos(omega_high))
+    b2 = A*((A+1)+(A-1)*np.cos(omega_high)-alpha)
+
+    a0 = (A+1)-(A-1)*np.cos(omega_high)+alpha
+    a1 = 2*A*((A-1)-(A+1)*np.cos(omega_high))
+    a2 = (A+1)-(A-1)*np.cos(omega_high)-alpha
+
+    sos_poly = np.asarray([b0,b1,b2,a0,a1,a2])
+    sos_holder.append(sos_poly)
+    num_poly = np.asarray([b0,b1,b2])
+    zeros.append(num_poly)
+    den_poly = np.asarray([a0,a1,a2])
+    poles.append(den_poly)
+
+    ##Peaking Filters
+    for jj in range(num_peaks):
+        f_peak = rng.uniform(low=f_low,high=f_high)
+        omega = 2*np.pi*f_peak/f_s
+        g = rng.binomial(1,bern_peak)*(rng.beta(5,5)*(g_max-g_min)+g_min)
+        q = rng.beta(1,5)*(q_max_peak-q_min)+q_min
+
+        alpha = np.sin(omega)/(2*q)
+        A = np.power(10,g/40)
+
+        b0 = 1+(alpha*A)
+        b1 = -2*np.cos(omega)
+        b2 = 1-(alpha*A)
+
+        a0 = 1+(alpha/A)
+        a1 = -2*np.cos(omega)
+        a2 = 1-(alpha/A)
+
+        sos_poly = np.asarray([b0,b1,b2,a0,a1,a2])
+        sos_holder.append(sos_poly)
+        num_poly = np.asarray([b0,b1,b2])
+        zeros.append(num_poly)
+        den_poly = np.asarray([a0,a1,a2])
+        poles.append(den_poly)
+
+    sos = np.vstack(sos_holder)
+    my_norms = sos[:,3]
+    sos = sos/my_norms[:,None] ##sosfreqz requires sos[:,3]=1
+    sos = sos[0,:] ##Due to order restriction, we're only taking the low shelf sos
+    w, h = scipy.signal.sosfreqz(sos, worN=self.num_points)
+    sos = sos[None,:] 
+    mag = np.abs(h)
+    phs = np.unwrap(np.angle(h))
+    real = np.real(h)
+    imag = np.imag(h)
+
+    all_zeros = np.hstack(zeros)
+    all_poles = np.hstack(poles)
+    coef = np.hstack((all_zeros,all_poles)) ##DO YOU NEED COEFFICIENTS FORMATTED THIS WAY??
+
+    return mag, phs, real, imag, sos
+
