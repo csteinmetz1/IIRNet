@@ -2,6 +2,7 @@ import sys
 import torch
 import numpy as np
 from numpy.random import default_rng
+from numpy import linalg as LA
 import scipy.signal
 from scipy.stats import loguniform
 
@@ -58,7 +59,7 @@ class IIRFilterDataset(torch.utils.data.Dataset):
 
   def __getitem__(self, idx):
     # generate random filter coeffiecents
-    mag, phs, real, imag, sos = self.generate_nercissian_filter()
+    mag, phs, real, imag, sos = self.generate_characteristic_filter()
     
     # apply normalization
     if self.standard_norm:
@@ -114,7 +115,7 @@ class IIRFilterDataset(torch.utils.data.Dataset):
 
     return mag, phs, real, imag, sos
 
-  def generate_nercissian_filter(self):
+  def generate_nercessian_filter(self):
     """ Generate a random filter according to the method specified in Nercissian's paper
 
     Returns: 
@@ -213,17 +214,54 @@ class IIRFilterDataset(torch.utils.data.Dataset):
     sos = np.vstack(sos_holder)
     my_norms = sos[:,3]
     sos = sos/my_norms[:,None] ##sosfreqz requires sos[:,3]=1
-    sos = sos[0,:] ##Due to order restriction, we're only taking the low shelf sos
     w, h = scipy.signal.sosfreqz(sos, worN=self.num_points)
-    sos = sos[None,:] 
     mag = np.abs(h)
     phs = np.unwrap(np.angle(h))
     real = np.real(h)
     imag = np.imag(h)
-
-    all_zeros = np.hstack(zeros)
-    all_poles = np.hstack(poles)
-    coef = np.hstack((all_zeros,all_poles)) ##DO YOU NEED COEFFICIENTS FORMATTED THIS WAY??
-
     return mag, phs, real, imag, sos
 
+  def generate_characteristic_filter(self):
+    rng = default_rng()
+    num_filters = 10
+
+    max_ord = self.max_order
+    n_fft = 4098
+    trim_point = int(n_fft/2+1)
+
+    sos = []
+    num_ord = rng.integers(low=1,high=max_ord)
+    den_ord = rng.integers(low=1,high=max_ord)
+    num_ord = max_ord ##Comment these out when we can handle variable order filters
+    den_ord = max_ord ##
+    chosen_max = np.max((num_ord,den_ord))
+    all_num = np.zeros(chosen_max,dtype=np.cdouble)
+    all_den = np.zeros(chosen_max,dtype=np.cdouble)
+    num_char_matrix = rng.normal(size=(num_ord,num_ord))
+    den_char_matrix = rng.normal(size=(den_ord,den_ord))
+    num_w, _ = LA.eig(num_char_matrix)
+    den_w, _ = LA.eig(den_char_matrix)
+    sort_num = np.argsort(-1*np.abs(np.imag(num_w)))
+    sort_den = np.argsort(-1*np.abs(np.imag(den_w)))
+    num_w = (1/np.sqrt(max_ord))*num_w[sort_num]
+    all_num[:len(num_w)] = num_w
+    den_w = (1/np.sqrt(max_ord))*den_w[sort_den]
+    all_den[:len(den_w)] = den_w 
+
+    for ii in range(chosen_max//2):
+        num_poly = np.real(np.polymul([1,-1*all_num[2*ii]],[1,-1*all_num[2*ii+1]]))
+        den_poly = np.real(np.polymul([1,-1*all_den[2*ii]],[1,-1*all_den[2*ii+1]]))
+        sos.append(np.hstack((num_poly,den_poly)))
+    if chosen_max%2==1:
+        num_poly = np.real(np.polymul([1,0],[1,-1*all_num[-1]]))
+        den_poly = np.real(np.polymul([1,0],[1,-1*all_den[-1]]))
+        sos.append(np.hstack((num_poly,den_poly)))
+    sos = np.asarray(sos)
+    my_norms = sos[:,3]
+    sos = sos/my_norms[:,None] ##sosfreqz requires sos[:,3]=1
+    w, h = scipy.signal.sosfreqz(sos, worN=self.num_points)
+    mag = np.abs(h)
+    phs = np.unwrap(np.angle(h))
+    real = np.real(h)
+    imag = np.imag(h)
+    return mag, phs, real, imag, sos
