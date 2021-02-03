@@ -8,20 +8,19 @@ class MLPModel(IIRNet):
     """ Multi-layer perceptron module. """
     def __init__(self, 
                 num_points = 512,
-                num_layers = 4,
+                num_layers = 10,
                 hidden_dim = 128,
-                max_order = 10,
+                order = 2,
                 normalization = "none",
                 lr = 3e-4,
                 **kwargs):
         super(MLPModel, self).__init__()
-
         self.save_hyperparameters()
 
         self.layers = torch.nn.ModuleList()
 
         for n in range(self.hparams.num_layers):
-            in_features = self.hparams.hidden_dim if n != 0 else self.hparams.num_points*2
+            in_features = self.hparams.hidden_dim if n != 0 else self.hparams.num_points
             out_features = self.hparams.hidden_dim
             if n+1 == self.hparams.num_layers: # no activation at last layer
                 self.layers.append(torch.nn.Sequential(
@@ -30,17 +29,19 @@ class MLPModel(IIRNet):
             else:
                 self.layers.append(torch.nn.Sequential(
                     torch.nn.Linear(in_features, out_features),
+                    torch.nn.BatchNorm1d(out_features, momentum=0.001),
                     torch.nn.PReLU(),
                 ))
 
-        n_coef = (self.hparams.max_order//2) * 6
+        n_coef = (self.hparams.order//2) * 6
         self.layers.append(torch.nn.Linear(out_features, n_coef))
 
         if self.hparams.normalization == "bn":
             self.bn = torch.nn.BatchNorm1d(self.hparams.num_points*2)
 
-    def forward(self, real, imag):
-        x = torch.cat((real, imag), dim=-1)
+    def forward(self, mag, phs=None):
+        #x = torch.cat((mag), dim=-1)
+        x = mag
 
         if self.hparams.normalization == "tanh":
             x = torch.tanh(x)
@@ -51,7 +52,7 @@ class MLPModel(IIRNet):
             x = layer(x) 
 
         # reshape into sos format (n_section, (b0, b1, b2, a0, a1, a2))
-        n_sections = self.hparams.max_order//2
+        n_sections = self.hparams.order//2
         x = x.view(-1,n_sections,6)
 
         return x

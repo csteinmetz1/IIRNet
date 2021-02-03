@@ -17,8 +17,8 @@ class IIRNet(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         mag, phs, real, imag, sos = batch
-        pred_sos = self(real, imag)
-        loss = self.complexfreqzloss(pred_sos, sos)
+        pred_sos = self(mag)
+        loss = self.magfreqzloss(pred_sos, sos)
 
         self.log('train_loss', 
                     loss, 
@@ -30,8 +30,8 @@ class IIRNet(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         mag, phs, real, imag, sos = batch
-        pred_sos = self(real, imag)
-        loss = self.complexfreqzloss(pred_sos, sos)
+        pred_sos = self(mag)
+        loss = self.magfreqzloss(pred_sos, sos)
 
         self.log('val_loss', loss)
 
@@ -57,7 +57,7 @@ class IIRNet(pl.LightningModule):
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         # --- model related ---
-        parser.add_argument('--num_points', type=int, default=512)
+        parser.add_argument('--num_points', type=int, default=32)
         parser.add_argument('--num_layers', type=int, default=4)
         parser.add_argument('--hidden_dim', type=int, default=128)
         parser.add_argument('--filter_order', type=int, default=2)

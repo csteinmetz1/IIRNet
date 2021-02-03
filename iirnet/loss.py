@@ -11,16 +11,26 @@ class LogMagFrequencyLoss(torch.nn.Module):
     def forward(self, input, target):
         bs = input.size(0)
         loss = 0
-        for n in range(bs):
-            w, input_h = signal.sosfreqz(input[n,...])
-            w, target_h = signal.sosfreqz(target[n,...])
 
+        if False:
+            for n in range(bs):
+                w, input_h = signal.sosfreqz(input[n,...])
+                w, target_h = signal.sosfreqz(target[n,...])
+
+                input_mag = torch.log(signal.mag(input_h))
+                target_mag = torch.log(signal.mag(target_h))
+
+                loss += torch.nn.functional.l1_loss(input_mag, target_mag)
+        else:
+            w, input_h = signal.sosfreqz(input, log=False)
+            w, target_h = signal.sosfreqz(target, log=False)
+            
             input_mag = torch.log(signal.mag(input_h))
             target_mag = torch.log(signal.mag(target_h))
 
-            loss += torch.nn.functional.l1_loss(input_mag, target_mag)
+            mag_loss = torch.nn.functional.mse_loss(input_mag, target_mag)
         
-        return loss / bs
+        return mag_loss
 
 class ComplexLoss(torch.nn.Module):
     def __init__(self, threshold=1e-16):
