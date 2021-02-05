@@ -8,7 +8,7 @@ class LogMagFrequencyLoss(torch.nn.Module):
     def __init__(self):
         super(LogMagFrequencyLoss, self).__init__()
 
-    def forward(self, input, target):
+    def forward(self, input, target, eps=1e-8):
         bs = input.size(0)
         loss = 0
 
@@ -17,19 +17,33 @@ class LogMagFrequencyLoss(torch.nn.Module):
                 w, input_h = signal.sosfreqz(input[n,...])
                 w, target_h = signal.sosfreqz(target[n,...])
 
-                input_mag = torch.log(signal.mag(input_h))
-                target_mag = torch.log(signal.mag(target_h))
+                input_mag = 20 * torch.log10(signal.mag(input_h) + eps)
+                target_mag = 20 * torch.log10(signal.mag(target_h) + eps)
 
                 loss += torch.nn.functional.l1_loss(input_mag, target_mag)
         else:
             w, input_h = signal.sosfreqz(input, log=False)
             w, target_h = signal.sosfreqz(target, log=False)
             
-            input_mag = torch.log(signal.mag(input_h))
-            target_mag = torch.log(signal.mag(target_h))
+            input_mag = 20 * torch.log10(signal.mag(input_h) + eps)
+            target_mag = 20 * torch.log10(signal.mag(target_h) + eps)
 
             mag_loss = torch.nn.functional.mse_loss(input_mag, target_mag)
         
+        return mag_loss
+
+class LogMagTargetFrequencyLoss(torch.nn.Module):
+    def __init__(self):
+        super(LogMagTargetFrequencyLoss, self).__init__()
+
+    def forward(self, input_sos, target_h, eps=1e-8):
+        w, input_h = signal.sosfreqz(input_sos, worN=target_h.shape[-1], log=False)
+        
+        input_mag = 20 * torch.log10(signal.mag(input_h) + eps).float()
+        target_mag = 20 * torch.log10(signal.mag(target_h) + eps).float()
+
+        mag_loss = torch.nn.functional.mse_loss(input_mag, target_mag)
+    
         return mag_loss
 
 class ComplexLoss(torch.nn.Module):
