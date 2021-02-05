@@ -4,6 +4,7 @@ from argparse import ArgumentParser
 
 import iirnet.loss as loss
 import iirnet.plotting as plotting
+import iirnet.signal as signal
 
 class IIRNet(pl.LightningModule):
     """ Base IIRNet module. """
@@ -20,6 +21,9 @@ class IIRNet(pl.LightningModule):
         pred_sos = self(mag)
         loss = self.magfreqzloss(pred_sos, sos)
 
+        #loss2 = torch.nn.functional.mse_loss(pred_sos, sos)
+        #loss += loss2
+
         self.log('train_loss', 
                     loss, 
                     on_step=True, 
@@ -32,6 +36,9 @@ class IIRNet(pl.LightningModule):
         mag, phs, real, imag, sos = batch
         pred_sos = self(mag)
         loss = self.magfreqzloss(pred_sos, sos)
+
+        #loss2 = torch.nn.functional.mse_loss(pred_sos, sos)
+        #loss += loss2
 
         self.log('val_loss', loss)
 
@@ -47,6 +54,12 @@ class IIRNet(pl.LightningModule):
 
         pred_sos = torch.split(validation_step_outputs[0]["pred_sos"], 1, dim=0)       
         sos = torch.split(validation_step_outputs[0]["sos"], 1, dim=0)
+        
+        #val_sos, _, _ = signal._validate_sos(sos[0])
+        #val_pred_sos, _, _ = signal._validate_sos(pred_sos[0])
+
+        #for n in range(6):
+        #    print(f"{val_sos[0,0,n]} - {val_pred_sos[0,0,n]}")
 
         #self.logger.experiment.add_image("mag", plotting.plot_compare_response(pred_sos, sos), self.global_step)
         self.logger.experiment.add_image("mag-grid", plotting.plot_response_grid(pred_sos, sos), self.global_step)
