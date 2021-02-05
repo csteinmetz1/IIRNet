@@ -98,7 +98,7 @@ def sosfreqz(sos, worN=512, whole=False, fs=2*np.pi, log=False):
 
     return w, h
 
-def _validate_sos(sos, eps=1e-8):
+def _validate_sos(sos, eps=1e-8, normalize=False):
     """ Helper to validate a SOS input. """
 
     if sos.ndim == 2:
@@ -118,8 +118,9 @@ def _validate_sos(sos, eps=1e-8):
     #sos = sos[sos.sum(-1) != 0,:]
 
     # normalize by a0
-    a0 = sos[:,3].unsqueeze(-1)
-    sos = sos/a0
+    if normalize:
+        a0 = sos[:,3].unsqueeze(-1)
+        sos = sos/a0
 
     #if not (sos[:, 3] == 1).all():
     #    raise ValueError('sos[:, 3] should be all ones')
