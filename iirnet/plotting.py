@@ -48,6 +48,7 @@ def plot_response_grid(pred_coefs, target_coefs, num_points=512, eps=1e-8, fs=44
     buf.seek(0)
     image = PIL.Image.open(buf)
     image = ToTensor()(image)#.unsqueeze(0)
+    plt.close('all')
 
     return image
 
