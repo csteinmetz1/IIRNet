@@ -10,7 +10,7 @@ from iirnet.lstm import LSTMModel
 parser = ArgumentParser()
 
 parser.add_argument('--shuffle', action="store_true")
-parser.add_argument('--batch_size', type=int, default=128)
+parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--num_workers', type=int, default=0)
 parser.add_argument('--model_name', type=str, default='mlp', help='mlp or lstm')
 parser.add_argument('--num_train_examples', type=int, default=1000000)
@@ -27,7 +27,6 @@ elif temp_args.model_name == 'lstm':
 parser = pl.Trainer.add_argparse_args(parser)       # add all the available trainer options to argparse
 args = parser.parse_args()                          # parse them args                      
 
-num_examples = 10000
 
 # init the trainer and model 
 trainer = pl.Trainer.from_argparse_args(args)
@@ -48,6 +47,7 @@ val_dataloader = torch.utils.data.DataLoader(val_dataset,
                                                shuffle=args.shuffle,
                                                batch_size=args.batch_size,
                                                num_workers=args.num_workers)
+
 
 # build the model
 if args.model_name == 'mlp':
