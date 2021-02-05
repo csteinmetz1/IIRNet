@@ -55,6 +55,9 @@ class MLPModel(IIRNet):
         n_sections = self.hparams.max_order//2
         x = x.view(-1,n_sections,6)
 
+        # replace a0
+        x[:,:,3] = 1.0
+
         x = torch.tanh(x)
 
         return x
