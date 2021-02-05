@@ -25,7 +25,7 @@ def generate_pass_filter(num_points=512, max_order=2):
 
     wn = float(loguniform.rvs(1e-3, 1e0))
     rp = np.random.rand() * 20
-    N = np.random.randint(1,max_order)
+    N = max_order #np.random.randint(1,max_order)
 
     sos = scipy.signal.cheby1(N, rp, wn, output='sos', btype=btype)
 
@@ -36,7 +36,7 @@ def generate_pass_filter(num_points=512, max_order=2):
     real = np.real(h)
     imag = np.imag(h)
 
-    mag = np.log10(mag)
+    mag = np.log10(mag + 1e-8)
 
     return mag, phs, real, imag, sos
 
@@ -86,7 +86,6 @@ def generate_parametric_eq(num_points=512, f_s=48000):
     zeros.append(num_poly)
     den_poly = np.asarray([a0,a1,a2])
     poles.append(den_poly)
-
 
     ##High Shelf Filter
     f_high = rng.beta(4,5)*(f_max-f_min)+f_min
@@ -145,11 +144,11 @@ def generate_parametric_eq(num_points=512, f_s=48000):
     real = np.real(h)
     imag = np.imag(h)
 
-    mag = np.log10(mag)
+    mag = np.log10(mag + 1e-8)
 
     return mag, phs, real, imag, sos
 
-def generate_characteristic_poly_filter(num_points=512, max_order=10):
+def generate_characteristic_poly_filter(num_points, max_order, eps=1e-8):
     rng = default_rng()
     num_filters = 10
 
@@ -195,6 +194,8 @@ def generate_characteristic_poly_filter(num_points=512, max_order=10):
     real = np.real(h)
     imag = np.imag(h)
 
-    mag = np.log10(mag)
+    mag = np.log10(mag + eps)
 
-    return mag, phs, real, imag, sos
+    out = mag, phs, real, imag, sos
+
+    return out
