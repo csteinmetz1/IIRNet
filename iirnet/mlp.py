@@ -8,8 +8,8 @@ class MLPModel(IIRNet):
     """ Multi-layer perceptron module. """
     def __init__(self, 
                 num_points = 512,
-                num_layers = 10,
-                hidden_dim = 2048,
+                num_layers = 2,
+                hidden_dim = 8192,
                 max_order = 2,
                 normalization = "none",
                 lr = 3e-4,
@@ -30,7 +30,7 @@ class MLPModel(IIRNet):
                 self.layers.append(torch.nn.Sequential(
                     torch.nn.Linear(in_features, out_features),
                     torch.nn.LayerNorm(out_features),
-                    torch.nn.PReLU(),
+                    torch.nn.LeakyReLU(0.2),
                 ))
 
         n_coef = (self.hparams.max_order//2) * 6
@@ -58,7 +58,7 @@ class MLPModel(IIRNet):
         # replace a0
         x[:,:,3] = 1.0
 
-        x = torch.tanh(x)
+        #x = torch.tanh(x)
 
         return x
 
@@ -79,8 +79,8 @@ class MLPModel(IIRNet):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         # --- model related ---
         parser.add_argument('--num_points', type=int, default=512)
-        parser.add_argument('--num_layers', type=int, default=4)
-        parser.add_argument('--hidden_dim', type=int, default=4096)
+        parser.add_argument('--num_layers', type=int, default=2)
+        parser.add_argument('--hidden_dim', type=int, default=8192)
         parser.add_argument('--max_order', type=int, default=10)
         parser.add_argument('--normalization', type=str, default="none")
         # --- training related ---
