@@ -1,4 +1,5 @@
 import torch
+import random
 import pytorch_lightning as pl
 from argparse import ArgumentParser
 
@@ -20,9 +21,7 @@ class IIRNet(pl.LightningModule):
         mag, phs, real, imag, sos = batch
         pred_sos = self(mag)
         loss = self.magfreqzloss(pred_sos, sos)
-
-        #loss2 = torch.nn.functional.mse_loss(pred_sos, sos)
-        #loss += loss2
+        #loss = torch.nn.functional.l1_loss(pred_sos, sos)
 
         self.log('train_loss', 
                     loss, 
@@ -36,9 +35,7 @@ class IIRNet(pl.LightningModule):
         mag, phs, real, imag, sos = batch
         pred_sos = self(mag)
         loss = self.magfreqzloss(pred_sos, sos)
-
-        #loss2 = torch.nn.functional.mse_loss(pred_sos, sos)
-        #loss += loss2
+        #loss = torch.nn.functional.l1_loss(pred_sos, sos)
 
         self.log('val_loss', loss)
 
@@ -52,6 +49,7 @@ class IIRNet(pl.LightningModule):
 
     def validation_epoch_end(self, validation_step_outputs):
 
+        random.shuffle(validation_step_outputs)
         pred_sos = torch.split(validation_step_outputs[0]["pred_sos"], 1, dim=0)       
         sos = torch.split(validation_step_outputs[0]["sos"], 1, dim=0)
         
