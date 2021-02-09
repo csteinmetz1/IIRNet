@@ -40,7 +40,7 @@ def generate_pass_filter(num_points=512, max_order=2):
 
     return mag, phs, real, imag, sos
 
-def generate_parametric_eq(num_points=512, f_s=48000):
+def generate_parametric_eq(num_points=512, max_order=10, f_s=48000):
     """ Generate a random parametric EQ cascase according to the method specified in
     [Nercessian 2020](https://dafx2020.mdw.ac.at/proceedings/papers/DAFx2020_paper_7.pdf).
 

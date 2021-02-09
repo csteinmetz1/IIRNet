@@ -14,13 +14,13 @@ class IIRFilterDataset(torch.utils.data.Dataset):
 
     """
     def __init__(self,
-                method = "pass",
+                method = "char_poly",
                 num_points = 512,
                 max_order = 10,
                 eps = 1e-8,
                 num_examples = 10000,
                 standard_norm = False,
-                precompute = True):
+                precompute = False):
         super(IIRFilterDataset, self).__init__()
         self.num_points = num_points
         self.max_order = max_order
@@ -87,7 +87,7 @@ class IIRFilterDataset(torch.utils.data.Dataset):
             mag, phs, real, imag, sos = self.examples[idx]
         else:
             # generate random filter coeffiecents
-            mag, phs, real, imag, sos = self.generate_filter()
+            mag, phs, real, imag, sos = self.generate_filter(self.num_points, self.max_order)
         
         # apply normalization
         if self.standard_norm:
