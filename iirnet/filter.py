@@ -145,7 +145,7 @@ def generate_parametric_eq(num_points, max_order, f_s=48000):
     real = np.real(h)
     imag = np.imag(h)
 
-    mag = np.log10(mag + 1e-8)
+    mag = 20 * np.log10(mag + 1e-8)
 
     return mag, phs, real, imag, sos
 
@@ -263,7 +263,7 @@ def generate_uniform_parametric_eq(num_points, max_order, f_s=48000):
     real = np.real(h)
     imag = np.imag(h)
 
-    mag = np.log10(mag + 1e-8)
+    mag = 20 * np.log10(mag + 1e-8)
 
     return mag, phs, real, imag, sos
 
@@ -316,7 +316,7 @@ def generate_characteristic_poly_filter(num_points, max_order, eps=1e-8):
     real = np.real(h)
     imag = np.imag(h)
 
-    mag = np.log10(mag + eps)
+    mag = 20 * np.log10(mag + eps)
 
     out = mag, phs, real, imag, sos
 
