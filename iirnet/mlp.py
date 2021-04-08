@@ -23,8 +23,10 @@ class MLPModel(IIRNet):
             in_features = self.hparams.hidden_dim if n != 0 else self.hparams.num_points
             out_features = self.hparams.hidden_dim
             if n+1 == self.hparams.num_layers: # no activation at last layer
+                my_layer = torch.nn.Linear(in_features, out_features)
+                my_layer.bias.data.fill_(0.5)
                 self.layers.append(torch.nn.Sequential(
-                    torch.nn.Linear(in_features, out_features),
+                    my_layer,
                 ))
             else:
                 self.layers.append(torch.nn.Sequential(
@@ -47,6 +49,8 @@ class MLPModel(IIRNet):
             x = torch.tanh(x)
         elif self.hparams.normalization == "bn":
             x = self.bn(x)
+        elif self.hparams.normalization == "mean":
+            x = x - torch.mean(x)
 
         for layer in self.layers:
             x = layer(x) 

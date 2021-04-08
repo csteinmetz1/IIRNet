@@ -33,9 +33,10 @@ class IIRFilterDataset(torch.utils.data.Dataset):
             self.generate_filter = generate_pass_filter
         elif method == "parametric":
             self.generate_filter = generate_parametric_eq
-            self.max_order = 10
         elif method == "char_poly":
             self.generate_filter = generate_characteristic_poly_filter
+        elif method == "uniform_parametric":
+            self.generate_filter = generate_uniform_parametric_eq
         else:
             raise ValueError(f"Invalid method: {method}")
         
