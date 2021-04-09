@@ -21,7 +21,6 @@ class IIRNet(pl.LightningModule):
         mag, phs, real, imag, sos = batch
         pred_sos = self(mag)
         loss = self.magfreqzloss(pred_sos, sos)
-        #loss = torch.nn.functional.l1_loss(pred_sos, sos)
 
         self.log('train_loss', 
                     loss, 
@@ -52,14 +51,7 @@ class IIRNet(pl.LightningModule):
         random.shuffle(validation_step_outputs)
         pred_sos = torch.split(validation_step_outputs[0]["pred_sos"], 1, dim=0)       
         sos = torch.split(validation_step_outputs[0]["sos"], 1, dim=0)
-        
-        #val_sos, _, _ = signal._validate_sos(sos[0])
-        #val_pred_sos, _, _ = signal._validate_sos(pred_sos[0])
 
-        #for n in range(6):
-        #    print(f"{val_sos[0,0,n]} - {val_pred_sos[0,0,n]}")
-
-        #self.logger.experiment.add_image("mag", plotting.plot_compare_response(pred_sos, sos), self.global_step)
         self.logger.experiment.add_image("mag-grid", plotting.plot_response_grid(pred_sos, sos), self.global_step)
 
 
@@ -68,7 +60,7 @@ class IIRNet(pl.LightningModule):
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         # --- model related ---
-        parser.add_argument('--num_points', type=int, default=32)
+        parser.add_argument('--num_points', type=int, default=512)
         parser.add_argument('--num_layers', type=int, default=4)
         parser.add_argument('--hidden_dim', type=int, default=128)
         parser.add_argument('--filter_order', type=int, default=2)

@@ -1,9 +1,11 @@
 CUDA_VISIBLE_DEVICES=0 python train.py \
 --gpus 1 \
---max_order 4 \
+--filter_method parametric \
+--max_order 24 \
 --batch_size 32 \
 --num_workers 16 \
---lr 1e-6 \
---gradient_clip_val 0.5 \
+--lr 1e-2 \
+--gradient_clip_val 4.0 \
 --hidden_dim 4096 \
 --shuffle \
+--max_epochs 100 \

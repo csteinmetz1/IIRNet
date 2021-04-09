@@ -24,7 +24,7 @@ class MLPModel(IIRNet):
             out_features = self.hparams.hidden_dim
             if n+1 == self.hparams.num_layers: # no activation at last layer
                 my_layer = torch.nn.Linear(in_features, out_features)
-                my_layer.bias.data.fill_(0.5)
+                my_layer.bias.data.fill_(0.5) # what is motivation for this init?
                 self.layers.append(torch.nn.Sequential(
                     my_layer,
                 ))
@@ -50,7 +50,7 @@ class MLPModel(IIRNet):
         elif self.hparams.normalization == "bn":
             x = self.bn(x)
         elif self.hparams.normalization == "mean":
-            x = x - torch.mean(x)
+            x = x - torch.mean(x) # this likely does not do what we want
 
         for layer in self.layers:
             x = layer(x) 
@@ -69,8 +69,11 @@ class MLPModel(IIRNet):
     def configure_optimizers(self):
         #optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
         optimizer = torch.optim.SGD(self.parameters(), lr=self.hparams.lr)
-        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=4, verbose=True)
+        #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=4, verbose=True)
         #lr_scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=1e-5, max_lr=1e-3, verbose=True)
+        lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                                                  optimizer, 
+                                                  self.hparams.max_epochs, verbose=True)
         return {
             'optimizer': optimizer,
             'lr_scheduler': lr_scheduler,

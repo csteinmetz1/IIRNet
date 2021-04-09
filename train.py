@@ -11,10 +11,11 @@ parser = ArgumentParser()
 
 parser.add_argument('--shuffle', action="store_true")
 parser.add_argument('--precompute', action="store_true")
-parser.add_argument('--batch_size', type=int, default=32)
+parser.add_argument('--filter_method', type=str, default='char_poly')
+parser.add_argument('--batch_size', type=int, default=128)
 parser.add_argument('--num_workers', type=int, default=0)
 parser.add_argument('--model_name', type=str, default='mlp', help='mlp or lstm')
-parser.add_argument('--num_train_examples', type=int, default=1000000)
+parser.add_argument('--num_train_examples', type=int, default=100000)
 parser.add_argument('--num_val_examples', type=int, default=10000)
 
 temp_args, _ = parser.parse_known_args()
@@ -38,7 +39,7 @@ trainer = pl.Trainer.from_argparse_args(args)
 #                                  num_examples=args.num_train_examples,
 #                                  precompute=args.precompute)
 
-train_dataset = IIRFilterDataset(method="uniform_parametric",
+train_dataset = IIRFilterDataset(method=args.filter_method,
                                  num_points=args.num_points, 
                                  max_order=args.max_order, 
                                  num_examples=args.num_train_examples,
@@ -76,7 +77,7 @@ val_datasetD = IIRFilterDataset(method="uniform_parametric",
 # val_dataset = torch.utils.data.ConcatDataset([val_datasetA, val_datasetB, val_datasetC])
 # val_dataset = torch.utils.data.ConcatDataset([val_datasetA, val_datasetC])
 # val_dataset = torch.utils.data.ConcatDataset([val_datasetC])
-val_dataset = torch.utils.data.ConcatDataset([val_datasetD])
+val_dataset = torch.utils.data.ConcatDataset([val_datasetA])
 
 val_dataloader = torch.utils.data.DataLoader(val_dataset, 
                                              shuffle=args.shuffle,

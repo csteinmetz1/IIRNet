@@ -8,10 +8,15 @@ from itertools import repeat
 from iirnet.filter import *
 
 class IIRFilterDataset(torch.utils.data.Dataset):
-    """
-
-    method: ['pass', 'parametric', 'char_poly']
-
+    """ Dataset class to generate random IIR filters. 
+    
+    method (str): Random filter sampling method. Default: 'char_poly'
+        ['pass', 'parametric', 'char_poly', 'uniform_parametric']
+    num_points (int): Number of points in the FFT for computing magnitude response. Default: 512
+    eps (float): Small number of numerical stability. Default: 1e-8
+    num_examples (int): Number of filters per epoch. Default: 10,000.
+    standard_norm (bool): Normalize input features by mean and std across dataset. Default: False
+    precompute (bool): Precompute `num_examples` filters before training. Default: False
     """
     def __init__(self,
                 method = "char_poly",
@@ -29,13 +34,14 @@ class IIRFilterDataset(torch.utils.data.Dataset):
         self.standard_norm = standard_norm
         self.precompute = precompute
 
+        # assign the filter generation func
         if method == "pass":
             self.generate_filter = generate_pass_filter
         elif method == "parametric":
             self.generate_filter = generate_parametric_eq
         elif method == "char_poly":
             self.generate_filter = generate_characteristic_poly_filter
-        elif method == "uniform_parametric":
+        elif method == "uniform_parametric": 
             self.generate_filter = generate_uniform_parametric_eq
         else:
             raise ValueError(f"Invalid method: {method}")
@@ -101,15 +107,6 @@ class IIRFilterDataset(torch.utils.data.Dataset):
         real = torch.tensor(real.astype('float32'))
         imag = torch.tensor(imag.astype('float32'))
         sos = torch.tensor(sos.astype('float32'))
-
-        # fill empty sos with zeros 
-        # we do this just to stack batches (make sure to ignore zero sos)
-        #n_sections = sos.size(0)
-        #empty_sections = (self.max_order//2) - n_sections
-        #full_sos = torch.zeros(self.max_order//2,6)
-        #full_sos[:n_sections,:] = sos
-        #full_sos[n_sections:,:] = torch.tensor([1.,0.,0.,1.,0.,0.]).repeat(empty_sections,1) #torch.zeros(empty_sections,6)
-        #sos = full_sos
     
         return mag, phs, real, imag, sos
 
