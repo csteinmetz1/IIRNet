@@ -72,7 +72,7 @@ def sosfreqz(sos, worN=512, whole=False, fs=2*np.pi, log=False):
     
     Args:
         sos (Tensor): Array of second-order filter coefficients, with shape 
-        ``(n_sections, 6)``.
+        (n_sections, 6) or (batch, n_sections, 6).
 
     Returns: 
 
@@ -89,12 +89,21 @@ def sosfreqz(sos, worN=512, whole=False, fs=2*np.pi, log=False):
     if bs == 0:
         sos = sos.unsqueeze(0)
 
+    # this method of looping over SOS is somewhat slow
     for row in torch.chunk(sos, n_sections, dim=1):
         # remove batch elements that are NaN
         row = torch.nan_to_num(row)
-        row = row.view(-1, 6)
+        row = row.reshape(-1, 6) # shape: (batch_dim, 6) 
         w, rowh = freqz(row[:,:3], row[:,3:], worN=worN, whole=whole, fs=fs, log=log)
         h *= rowh
+
+    if False:  # instead, move all SOS onto batch dim, compute response, then move back
+        sos = sos.view(bs*n_sections,6)
+        w, sosh = freqz(sos[:,:3], sos[:,3:], worN=worN, whole=whole, fs=fs, log=log)
+        sosh = sosh.view(bs,n_sections,-1)
+        for rowh in torch.chunk(sosh, n_sections, dim=1):
+            rowh = rowh.view(bs,-1)
+            h *= rowh
 
     return w, h
 
@@ -107,7 +116,7 @@ def _validate_sos(sos, eps=1e-8, normalize=False):
     elif sos.ndim == 3:
         bs, n_sections, m = sos.shape
         # flatten batch into sections dim
-        sos = sos.view(bs*n_sections,6)
+        sos = sos.reshape(bs*n_sections,6)
     else:
         raise ValueError('sos array must be shape (batch, n_sections, 6) or (n_sections, 6)')
 

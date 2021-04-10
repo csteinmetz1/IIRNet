@@ -34,21 +34,37 @@ args = parser.parse_args()                          # parse them args
 trainer = pl.Trainer.from_argparse_args(args)
 
 # setup the dataloaders
-# train_dataset = IIRFilterDataset(num_points=args.num_points, 
-#                                  max_order=args.max_order, 
-#                                  num_examples=args.num_train_examples,
-#                                  precompute=args.precompute)
+train_datasetA = IIRFilterDataset(method="char_poly",
+                               num_points=args.num_points, 
+                               max_order=args.max_order, 
+                               num_examples=args.num_train_examples,
+                               precompute=args.precompute)
 
-train_dataset = IIRFilterDataset(method=args.filter_method,
-                                 num_points=args.num_points, 
-                                 max_order=args.max_order, 
-                                 num_examples=args.num_train_examples,
-                                 precompute=args.precompute)
+train_datasetB = IIRFilterDataset(method="pass",
+                               num_points=args.num_points, 
+                               max_order=args.max_order, 
+                               num_examples=args.num_train_examples,
+                               precompute=args.precompute)
+
+train_datasetC = IIRFilterDataset(method="parametric",
+                               num_points=args.num_points, 
+                               max_order=args.max_order, 
+                               num_examples=args.num_train_examples,
+                               precompute=args.precompute)
+
+train_datasetD = IIRFilterDataset(method="uniform_parametric",
+                               num_points=args.num_points, 
+                               max_order=args.max_order, 
+                               num_examples=args.num_train_examples,
+                               precompute=args.precompute)
+
+train_dataset = torch.utils.data.ConcatDataset([train_datasetA])
 
 train_dataloader = torch.utils.data.DataLoader(train_dataset, 
-                                               shuffle=args.shuffle,
-                                               batch_size=args.batch_size,
-                                               num_workers=args.num_workers)
+                                             shuffle=args.shuffle,
+                                             batch_size=args.batch_size,
+                                             num_workers=args.num_workers)
+
 
 val_datasetA = IIRFilterDataset(method="char_poly",
                                num_points=args.num_points, 
@@ -68,15 +84,13 @@ val_datasetC = IIRFilterDataset(method="parametric",
                                num_examples=args.num_val_examples,
                                precompute=args.precompute)
 
+# this one does not work at the moment
 val_datasetD = IIRFilterDataset(method="uniform_parametric",
                                num_points=args.num_points, 
                                max_order=args.max_order, 
                                num_examples=args.num_val_examples,
                                precompute=args.precompute)
 
-# val_dataset = torch.utils.data.ConcatDataset([val_datasetA, val_datasetB, val_datasetC])
-# val_dataset = torch.utils.data.ConcatDataset([val_datasetA, val_datasetC])
-# val_dataset = torch.utils.data.ConcatDataset([val_datasetC])
 val_dataset = torch.utils.data.ConcatDataset([val_datasetA])
 
 val_dataloader = torch.utils.data.DataLoader(val_dataset, 
