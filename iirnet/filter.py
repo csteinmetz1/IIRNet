@@ -24,10 +24,11 @@ def generate_pass_filter(num_points=512, max_order=2):
     btype = np.random.choice(['lowpass', 'highpass'])
 
     wn = float(loguniform.rvs(1e-3, 1e0))
-    rp = np.random.rand() * 20
-    N = max_order #np.random.randint(1,max_order)
+    #rp = np.random.rand() * 20
+    N = max_order
 
-    sos = scipy.signal.cheby1(N, rp, wn, output='sos', btype=btype)
+    #sos = scipy.signal.cheby1(N, rp, wn, output='sos', btype=btype)
+    sos = scipy.signal.butter(N, wn, output='sos', btype=btype)
 
     w, h = scipy.signal.sosfreqz(sos, worN=num_points)
 
@@ -279,8 +280,8 @@ def generate_characteristic_poly_filter(num_points, max_order, eps=1e-8):
     norm = 0.8 ##SHOULD BE HYPERPARAMETER
 
     sos = []
-    num_ord = max_ord ##Comment these out when we can handle variable order filters
-    den_ord = max_ord ##
+    num_ord = np.random.randint(1, max_order) #max_ord 
+    den_ord = np.random.randint(1, max_order) #max_ord 
     chosen_max = np.max((num_ord,den_ord))
     all_num = np.zeros(chosen_max,dtype=np.cdouble)
     all_den = np.zeros(chosen_max,dtype=np.cdouble)
@@ -299,10 +300,12 @@ def generate_characteristic_poly_filter(num_points, max_order, eps=1e-8):
         num_poly = np.real(np.polymul([1,-1*all_num[2*ii]],[1,-1*all_num[2*ii+1]]))
         den_poly = np.real(np.polymul([1,-1*all_den[2*ii]],[1,-1*all_den[2*ii+1]]))
         sos.append(np.hstack((num_poly,den_poly)))
-    if chosen_max%2==1:
+
+    if chosen_max%2==1: # add an extra section to make even number of sections
         num_poly = np.real(np.polymul([1,0],[1,-1*all_num[-1]]))
         den_poly = np.real(np.polymul([1,0],[1,-1*all_den[-1]]))
         sos.append(np.hstack((num_poly,den_poly)))
+
     sos = np.asarray(sos)
     num_sos = sos.shape[0]
     sos_proto = np.tile(np.asarray([1.0,0,0,1.0,0,0]),((max_ord+1)//2,1))
@@ -310,6 +313,7 @@ def generate_characteristic_poly_filter(num_points, max_order, eps=1e-8):
     sos = sos_proto
     my_norms = sos[:,3]
     sos = sos/my_norms[:,None] ##sosfreqz requires sos[:,3]=1
+    
     w, h = scipy.signal.sosfreqz(sos, worN=num_points)
     mag = np.abs(h)
     phs = np.unwrap(np.angle(h))

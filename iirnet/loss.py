@@ -5,8 +5,9 @@ import numpy as np
 import iirnet.signal as signal
 
 class LogMagFrequencyLoss(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, priority=False):
         super(LogMagFrequencyLoss, self).__init__()
+        self.priority = priority
 
     def forward(self, input, target, eps=1e-8):
         bs = input.size(0)
@@ -21,6 +22,25 @@ class LogMagFrequencyLoss(torch.nn.Module):
                 target_mag = 20 * torch.log10(signal.mag(target_h) + eps)
 
                 loss += torch.nn.functional.l1_loss(input_mag, target_mag)
+        elif self.priority:
+            # in this case, we compute the loss comparing the response as we increase the number 
+            # of biquads in the cascade, this should encourage to use lower order filter.
+
+            # first compute the target response
+            w, target_h = signal.sosfreqz(target, log=False)
+            target_mag = 20 * torch.log10(signal.mag(target_h) + eps)
+        
+            n_sections = input.shape[1]
+            mag_loss = 0
+            # now compute error with each group of biquads
+            for n in np.arange(n_sections, step=2):
+
+                sos = input[:,0:n+2,:]
+                w, input_h = signal.sosfreqz(sos, log=False)
+                input_mag = 20 * torch.log10(signal.mag(input_h) + eps)
+
+                mag_loss += torch.nn.functional.mse_loss(input_mag, target_mag)
+
         else:
             w, input_h = signal.sosfreqz(input, log=False)
             w, target_h = signal.sosfreqz(target, log=False)
@@ -29,7 +49,7 @@ class LogMagFrequencyLoss(torch.nn.Module):
             target_mag = 20 * torch.log10(signal.mag(target_h) + eps)
 
             mag_loss = torch.nn.functional.mse_loss(input_mag, target_mag)
-        
+
         return mag_loss
 
 class LogMagTargetFrequencyLoss(torch.nn.Module):

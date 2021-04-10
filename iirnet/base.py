@@ -11,7 +11,8 @@ class IIRNet(pl.LightningModule):
     """ Base IIRNet module. """
     def __init__(self, **kwargs):
         super(IIRNet, self).__init__()
-        self.magfreqzloss = loss.LogMagFrequencyLoss()
+        self.magfreqzloss = loss.LogMagFrequencyLoss(priority=True)
+        self.magfreqzloss_val = loss.LogMagFrequencyLoss()
         self.complexfreqzloss = loss.ComplexLoss()
 
     def forward(self, x):
@@ -33,10 +34,12 @@ class IIRNet(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         mag, phs, real, imag, sos = batch
         pred_sos = self(mag)
-        loss = self.magfreqzloss(pred_sos, sos)
+        loss = self.magfreqzloss_val(pred_sos, sos)
+        priority_loss = self.magfreqzloss(pred_sos, sos)
         #loss = torch.nn.functional.l1_loss(pred_sos, sos)
 
         self.log('val_loss', loss)
+        self.log('val_loss/priority', priority_loss)
 
         # move tensors to cpu for logging
         outputs = {
