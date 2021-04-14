@@ -131,4 +131,5 @@ dmypy.json
 lightning_logs/
 .vscode
 data/HRTF
+data/plots
 .DS_Store
