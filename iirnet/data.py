@@ -43,6 +43,10 @@ class IIRFilterDataset(torch.utils.data.Dataset):
             self.generate_filter = generate_characteristic_poly_filter
         elif method == "uniform_parametric": 
             self.generate_filter = generate_uniform_parametric_eq
+        elif method == "uniform_biquad":
+            self.generate_filter = generate_uniform_biquad
+        elif method == "uniform_disk":
+            self.generate_filter = generate_uniform_disk_filter
         else:
             raise ValueError(f"Invalid method: {method}")
         
@@ -109,4 +113,3 @@ class IIRFilterDataset(torch.utils.data.Dataset):
         sos = torch.tensor(sos.astype('float32'))
     
         return mag, phs, real, imag, sos
-

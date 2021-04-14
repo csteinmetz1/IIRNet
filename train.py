@@ -12,6 +12,7 @@ parser = ArgumentParser()
 parser.add_argument('--shuffle', action="store_true")
 parser.add_argument('--precompute', action="store_true")
 parser.add_argument('--filter_method', type=str, default='char_poly')
+parser.add_argument('--max_train_order', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=128)
 parser.add_argument('--num_workers', type=int, default=0)
 parser.add_argument('--model_name', type=str, default='mlp', help='mlp or lstm')
@@ -34,27 +35,27 @@ args = parser.parse_args()                          # parse them args
 trainer = pl.Trainer.from_argparse_args(args)
 
 # setup the dataloaders
-train_datasetA = IIRFilterDataset(method="char_poly",
+train_datasetA = IIRFilterDataset(method="uniform_disk",
                                num_points=args.num_points, 
-                               max_order=args.max_order, 
+                               max_order=args.max_train_order, 
                                num_examples=args.num_train_examples,
                                precompute=args.precompute)
 
 train_datasetB = IIRFilterDataset(method="pass",
                                num_points=args.num_points, 
-                               max_order=args.max_order, 
+                               max_order=args.max_train_order, 
                                num_examples=args.num_train_examples,
                                precompute=args.precompute)
 
 train_datasetC = IIRFilterDataset(method="parametric",
                                num_points=args.num_points, 
-                               max_order=args.max_order, 
+                               max_order=args.max_train_order, 
                                num_examples=args.num_train_examples,
                                precompute=args.precompute)
 
 train_datasetD = IIRFilterDataset(method="uniform_parametric",
                                num_points=args.num_points, 
-                               max_order=args.max_order, 
+                               max_order=args.max_train_order, 
                                num_examples=args.num_train_examples,
                                precompute=args.precompute)
 
@@ -66,28 +67,28 @@ train_dataloader = torch.utils.data.DataLoader(train_dataset,
                                              num_workers=args.num_workers)
 
 
-val_datasetA = IIRFilterDataset(method="char_poly",
+val_datasetA = IIRFilterDataset(method="uniform_disk",
                                num_points=args.num_points, 
-                               max_order=args.max_order, 
+                               max_order=args.max_train_order, 
                                num_examples=args.num_val_examples,
                                precompute=args.precompute)
 
 val_datasetB = IIRFilterDataset(method="pass",
                                num_points=args.num_points, 
-                               max_order=args.max_order, 
+                               max_order=args.max_train_order, 
                                num_examples=args.num_val_examples,
                                precompute=args.precompute)
 
 val_datasetC = IIRFilterDataset(method="parametric",
                                num_points=args.num_points, 
-                               max_order=args.max_order, 
+                               max_order=args.max_train_order, 
                                num_examples=args.num_val_examples,
                                precompute=args.precompute)
 
 # this one does not work at the moment
 val_datasetD = IIRFilterDataset(method="uniform_parametric",
                                num_points=args.num_points, 
-                               max_order=args.max_order, 
+                               max_order=args.max_train_order, 
                                num_examples=args.num_val_examples,
                                precompute=args.precompute)
 

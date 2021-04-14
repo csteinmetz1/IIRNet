@@ -13,7 +13,7 @@ from iirnet.filter import generate_characteristic_poly_filter
 magloss = LogMagFrequencyLoss()
 magtarget = LogMagTargetFrequencyLoss()
 
-def sgd_filter_design(n_iters=10000, sos_init=None):
+def sgd_filter_design(n_iters=1000, sos_init=None):
 
     # create the biquad coefficients we will optimize
     pred_sos = torch.rand(1,12,6, requires_grad=True)
@@ -65,7 +65,7 @@ if __name__ == '__main__':
 
         # use a pre-trained IIRNet model to predict
 
-        ckpt_path = glob.glob('lightning_logs/version_11/checkpoints/*.ckpt')[0]
+        ckpt_path = glob.glob('lightning_logs/version_4/checkpoints/*.ckpt')[0]
         model = MLPModel.load_from_checkpoint(ckpt_path)
         model.eval()
         

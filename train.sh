@@ -1,6 +1,7 @@
 CUDA_VISIBLE_DEVICES=1 python train.py \
 --gpus 1 \
---max_order 24 \
+--model_order 24 \
+--max_train_order 100 \
 --batch_size 128 \
 --num_workers 16 \
 --lr 1e-2 \

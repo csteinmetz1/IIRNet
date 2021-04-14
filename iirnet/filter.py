@@ -150,6 +150,37 @@ def generate_parametric_eq(num_points, max_order, f_s=48000):
 
     return mag, phs, real, imag, sos
 
+def generate_uniform_biquad(num_points, max_order, norm=0.1):
+
+    sos = (np.random.rand(max_order,6) * 1.0) - 0.5
+
+    #zeros = []
+    #poles = []
+    #gain = 1.0
+    #for n in range(max_order):
+    #    x = np.random.rand()
+    #    y = np.random.rand()
+    #    poles.append(x + (y * 1j))
+    #    poles.append(x - (y * 1j))
+
+    #sos = scipy.signal.zpk2sos(zeros, poles, gain)
+    #print(sos.shape)
+
+    a0 = sos[:,3].reshape(-1,1)
+    sos = sos/a0
+    #sos[:,3] = 1
+
+    w, h = scipy.signal.sosfreqz(sos, worN=num_points)
+
+    mag = np.abs(h)
+    phs = np.unwrap(np.angle(h))
+    real = np.real(h)
+    imag = np.imag(h)
+
+    mag = 20 * np.log10(mag + 1e-8)
+
+    return mag, phs, real, imag, sos
+
 def generate_uniform_parametric_eq(num_points, max_order, f_s=48000):
     """ Generate a random parametric EQ cascase according to the method specified in
     [Nercessian 2020](https://dafx2020.mdw.ac.at/proceedings/papers/DAFx2020_paper_7.pdf).
@@ -272,10 +303,10 @@ def generate_characteristic_poly_filter(num_points, max_order, eps=1e-8):
     rng = default_rng()
     # num_filters = 10
 
-    max_ord = max_order
+    max_ord = 50
 
     # what are these for?
-    n_fft = 4098
+    n_fft = 4096
     trim_point = int(n_fft/2+1)
     norm = 0.8 ##SHOULD BE HYPERPARAMETER
 
@@ -296,10 +327,14 @@ def generate_characteristic_poly_filter(num_points, max_order, eps=1e-8):
     den_w = norm*(1/np.sqrt(max_ord))*den_w[sort_den]
     all_den[:len(den_w)] = den_w 
 
+    # select the number of coeffieicnts to set to zero
+    eff_ord = np.random.randint(1,max_ord) # effective order
+
     for ii in range(chosen_max//2):
         num_poly = np.real(np.polymul([1,-1*all_num[2*ii]],[1,-1*all_num[2*ii+1]]))
         den_poly = np.real(np.polymul([1,-1*all_den[2*ii]],[1,-1*all_den[2*ii+1]]))
         sos.append(np.hstack((num_poly,den_poly)))
+        if ii * 2 > eff_ord: break
 
     if chosen_max%2==1: # add an extra section to make even number of sections
         num_poly = np.real(np.polymul([1,0],[1,-1*all_num[-1]]))
@@ -314,6 +349,68 @@ def generate_characteristic_poly_filter(num_points, max_order, eps=1e-8):
     my_norms = sos[:,3]
     sos = sos/my_norms[:,None] ##sosfreqz requires sos[:,3]=1
     
+    w, h = scipy.signal.sosfreqz(sos, worN=num_points)
+    mag = np.abs(h)
+    phs = np.unwrap(np.angle(h))
+    real = np.real(h)
+    imag = np.imag(h)
+
+    mag = 20 * np.log10(mag + eps)
+
+    out = mag, phs, real, imag, sos
+
+    return out
+
+def generate_uniform_disk_filter(
+        num_points, 
+        max_order, 
+        eps=1e-8, 
+        min_freq=20.0, 
+        log=False, 
+        fs=44100
+    ):
+
+    rng = default_rng()
+
+    ##a and b are used for the loguniform sampling
+    a = min_freq/(0.5 * fs * np.pi) ##MIN CAN'T BE ZERO, CHOOSING 20HZ AS MINIMUM POLE/ZERO FREQUENCY
+    b = np.pi 
+    norm = torch.distributions.uniform.Uniform(0.0,1).sample() ##SHOULD BE HYPERPARAMETER
+
+    sos = []
+
+    num_ord = torch.randint(2, max_order, [1]).numpy()
+    den_ord = torch.randint(2, max_order, [1]).numpy()
+    chosen_max = np.max((num_ord,den_ord))
+    all_num = np.zeros(chosen_max,dtype=np.cdouble)
+    all_den = np.zeros(chosen_max,dtype=np.cdouble)
+    zeros_mags = torch.distributions.uniform.Uniform(0.0,norm).sample(num_ord//2)
+    poles_mags = torch.distributions.uniform.Uniform(0.0,norm).sample(num_ord//2)
+    if not log:
+        zeros_args = torch.distributions.uniform.Uniform(0.0,np.pi).sample(num_ord//2)
+        poles_args = torch.distributions.uniform.Uniform(0.0,np.pi).sample(num_ord//2)
+    else:
+        zeros_args = loguniform.rvs(a,b,size=(num_ord)//2)
+        poles_args = loguniform.rvs(a,b,size=(num_ord)//2)
+    for z_mag, z_arg, p_mag, p_arg in zip(zeros_mags,zeros_args,poles_mags,poles_args):
+        num_poly = [1,-2*z_mag*np.cos(z_arg),z_mag**2]
+        den_poly = [1,-2*p_mag*np.cos(p_arg),p_mag**2]
+        sos.append(np.hstack((num_poly,den_poly)))
+    if chosen_max%2==1:##IF ODD, add an extra zero and pole
+        zeros_mags = torch.distributions.uniform.Uniform(0.0,1).sample()
+        poles_mags = torch.distributions.uniform.Uniform(0.0,1).sample()
+        num_poly = [1,-1*zeros_mags,0]
+        den_poly = [1,-1*poles_mags,0]
+        sos.append(np.hstack((num_poly,den_poly)))
+        #JT_zeros = np.hstack((JT_zeros,-1*zeros_mags))
+        #JT_poles = np.hstack((JT_poles,-1*poles_mags))
+    sos = np.asarray(sos)
+    num_sos = sos.shape[0]
+    sos_proto = np.tile(np.asarray([1.0,0,0,1.0,0,0]),((max_order+1)//2,1))
+    sos_proto[:num_sos,:] = sos
+    sos = sos_proto
+    my_norms = sos[:,3]
+    sos = sos/my_norms[:,None] ##sosfreqz requires sos[:,3]=1
     w, h = scipy.signal.sosfreqz(sos, worN=num_points)
     mag = np.abs(h)
     phs = np.unwrap(np.angle(h))

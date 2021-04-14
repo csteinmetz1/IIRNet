@@ -35,7 +35,7 @@ class MLPModel(IIRNet):
                     torch.nn.LeakyReLU(0.2),
                 ))
 
-        n_coef = (self.hparams.max_order//2) * 6
+        n_coef = (self.hparams.model_order//2) * 6
         self.layers.append(torch.nn.Linear(out_features, n_coef))
 
         if self.hparams.normalization == "bn":
@@ -56,19 +56,19 @@ class MLPModel(IIRNet):
             x = layer(x) 
 
         # reshape into sos format (n_section, (b0, b1, b2, a0, a1, a2))
-        n_sections = self.hparams.max_order//2
-        x = x.view(-1,n_sections,6)
+        n_sections = self.hparams.model_order//2
+        #g = x[:,0:1] # gain
+        #sos = x[:,1:]
+        sos = x.view(-1,n_sections,6)
 
         # replace a0
-        x[:,:,3] = 1.0
+        sos[:,:,3] = 1.0
 
-        #x = torch.tanh(x)
-
-        return x
+        return sos
 
     def configure_optimizers(self):
-        #optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
-        optimizer = torch.optim.SGD(self.parameters(), lr=self.hparams.lr)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
+        #optimizer = torch.optim.SGD(self.parameters(), lr=self.hparams.lr)
         #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=4, verbose=True)
         #lr_scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=1e-5, max_lr=1e-3, verbose=True)
         lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
@@ -88,7 +88,7 @@ class MLPModel(IIRNet):
         parser.add_argument('--num_points', type=int, default=512)
         parser.add_argument('--num_layers', type=int, default=2)
         parser.add_argument('--hidden_dim', type=int, default=8192)
-        parser.add_argument('--max_order', type=int, default=10)
+        parser.add_argument('--model_order', type=int, default=10)
         parser.add_argument('--normalization', type=str, default="none")
         # --- training related ---
         parser.add_argument('--lr', type=float, default=1e-3)
