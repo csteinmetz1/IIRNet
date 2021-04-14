@@ -8,24 +8,42 @@ from torchvision.transforms import ToTensor
 
 import iirnet.signal as signal
 
-def plot_response_grid(pred_coefs, target_coefs, num_points=512, eps=1e-8, fs=44100):
+def plot_response_grid(
+        pred_coefs, 
+        target_coefs=None, 
+        target_mags=None,
+        num_points=512, 
+        eps=1e-8, 
+        fs=44100
+    ):
 
     ncols = 5
     nrows = 5
     pred_coefs = pred_coefs[:ncols*nrows]
-    target_coefs = target_coefs[:ncols*nrows]
+
+    if target_coefs is not None:
+        target = target_coefs[:ncols*nrows]
+    elif target_mags is not None:
+        target = target_mags[:ncols*nrows]
+    else:
+        raise ValueError("Must pass either `target_coefs` or `target_mags`.")
 
     fig, axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=(12, 12))
     axs = axs.reshape(-1)
 
-    for idx, (p, t) in enumerate(zip(pred_coefs, target_coefs)):
+    for idx, (p, t) in enumerate(zip(pred_coefs, target)):
 
         w_pred, h_pred = signal.sosfreqz(p, worN=num_points, fs=fs)
-        w_target, h_target = signal.sosfreqz(t, worN=num_points, fs=fs)
-
         mag_pred = 20 * np.log10(np.abs(h_pred.squeeze()) + 1e-8)
-        mag_target = 20 * np.log10(np.abs(h_target.squeeze()) + 1e-8)
-        axs[idx].plot(w_target, mag_target, color='b', label="target")
+
+
+        if target_coefs is not None:
+            w_target, h_target = signal.sosfreqz(t, worN=num_points, fs=fs)
+            mag_target = 20 * np.log10(np.abs(h_target.squeeze()) + 1e-8)
+        else:
+            mag_target = t.squeeze()
+
+        axs[idx].plot(w_pred, mag_target, color='b', label="target")
         axs[idx].plot(w_pred, mag_pred, color='r', label="pred")
         axs[idx].set_xscale('log')
         axs[idx].set_ylim([-60, 40])
