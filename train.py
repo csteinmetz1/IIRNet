@@ -35,7 +35,7 @@ args = parser.parse_args()                          # parse them args
 trainer = pl.Trainer.from_argparse_args(args)
 
 # setup the dataloaders
-train_datasetA = IIRFilterDataset(method="uniform_disk",
+train_datasetA = IIRFilterDataset(method="gaussian_peaks",
                                num_points=args.num_points, 
                                max_order=args.max_train_order, 
                                num_examples=args.num_train_examples,
@@ -67,7 +67,7 @@ train_dataloader = torch.utils.data.DataLoader(train_dataset,
                                              num_workers=args.num_workers)
 
 
-val_datasetA = IIRFilterDataset(method="uniform_disk",
+val_datasetA = IIRFilterDataset(method="gaussian_peaks",
                                num_points=args.num_points, 
                                max_order=args.max_train_order, 
                                num_examples=args.num_val_examples,
