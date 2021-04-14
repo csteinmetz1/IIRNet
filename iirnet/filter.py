@@ -2,6 +2,7 @@ import sys
 import torch
 import numpy as np
 import scipy.signal
+import scipy.stats as stats
 
 from numpy import linalg as LA
 from scipy.stats import loguniform
@@ -418,7 +419,42 @@ def generate_uniform_disk_filter(
     imag = np.imag(h)
 
     mag = 20 * np.log10(mag + eps)
+    #mag = mag - np.mean(mag)
 
     out = mag, phs, real, imag, sos
 
     return out
+
+def generate_gaussian_peaks(
+        num_points, 
+        max_order, 
+        max_peaks=100,
+    ):
+
+    mag = np.zeros(num_points)
+
+    num_peaks = torch.randint(1,max_peaks, [1])
+    for n in range(num_peaks):
+
+        # sample parameters
+        mu = torch.rand(1) * 20
+        mu = -mu if torch.rand(1) > 0.5 else mu
+
+        variance = ((torch.rand(1) * 1) + 0.1).squeeze().numpy()
+        sigma = np.sqrt(variance)
+        width = (torch.rand(1) * 100).squeeze().numpy()
+        gain = torch.rand(1).numpy() * 40
+        gain = -gain if torch.rand(1) > 0.5 else gain
+
+        x = np.linspace(-width*sigma, width*sigma, num_points)
+        mag += gain * stats.norm.pdf(x, mu, sigma)
+
+    phs =  np.zeros(num_points)
+    real =  np.zeros(num_points)
+    imag =  np.zeros(num_points)
+    sos = np.tile(np.asarray([1.0,0,0,1.0,0,0]),((max_order+1)//2,1))
+
+    out = mag, phs, real, imag, sos
+
+    return out
+    

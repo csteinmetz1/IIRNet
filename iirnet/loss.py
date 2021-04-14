@@ -53,17 +53,26 @@ class LogMagFrequencyLoss(torch.nn.Module):
         return mag_loss
 
 class LogMagTargetFrequencyLoss(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, priority=False):
         super(LogMagTargetFrequencyLoss, self).__init__()
+        self.priority = priority
 
-    def forward(self, input_sos, target_h, eps=1e-8):
-        w, input_h = signal.sosfreqz(input_sos, worN=target_h.shape[-1], log=False)
-        
-        input_mag = 20 * torch.log10(signal.mag(input_h) + eps).float()
-        target_mag = 20 * torch.log10(signal.mag(target_h) + eps).float()
+    def forward(self, input_sos, target_mag, eps=1e-8):
 
-        mag_loss = torch.nn.functional.mse_loss(input_mag, target_mag)
-    
+        if self.priority:
+            n_sections = input_sos.shape[1]
+            mag_loss = 0
+            # now compute error with each group of biquads
+            for n in np.arange(n_sections, step=2):
+                sos = input_sos[:,0:n+2,:]
+                w, input_h = signal.sosfreqz(sos, worN=target_mag.shape[-1], log=False)
+                input_mag = 20 * torch.log10(signal.mag(input_h) + eps)
+                mag_loss += torch.nn.functional.mse_loss(input_mag, target_mag)
+        else:
+            w, input_h = signal.sosfreqz(input_sos, worN=target_mag.shape[-1], log=False)
+            input_mag = 20 * torch.log10(signal.mag(input_h) + eps).float()
+            mag_loss = torch.nn.functional.mse_loss(input_mag, target_mag)
+
         return mag_loss
 
 class ComplexLoss(torch.nn.Module):

@@ -69,11 +69,11 @@ class MLPModel(IIRNet):
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
         #optimizer = torch.optim.SGD(self.parameters(), lr=self.hparams.lr)
-        #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=4, verbose=True)
+        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=4, verbose=True)
         #lr_scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=1e-5, max_lr=1e-3, verbose=True)
-        lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-                                                  optimizer, 
-                                                  self.hparams.max_epochs, verbose=True)
+        #lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        #                                          optimizer, 
+        #                                          self.hparams.max_epochs, verbose=True)
         return {
             'optimizer': optimizer,
             'lr_scheduler': lr_scheduler,

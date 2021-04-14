@@ -47,6 +47,8 @@ class IIRFilterDataset(torch.utils.data.Dataset):
             self.generate_filter = generate_uniform_biquad
         elif method == "uniform_disk":
             self.generate_filter = generate_uniform_disk_filter
+        elif method == "gaussian_peaks":
+            self.generate_filter = generate_gaussian_peaks
         else:
             raise ValueError(f"Invalid method: {method}")
         
