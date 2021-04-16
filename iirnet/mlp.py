@@ -59,19 +59,24 @@ class MLPModel(IIRNet):
         n_sections = self.hparams.model_order//2
         sos = x.view(-1,n_sections,6)
 
-        # extract coefficients
-        b0 = sos[:,:,0]
-        b1 = sos[:,:,1]
-        b2 = sos[:,:,2]
-        a0 = torch.ones(b0.shape, device=b0.device)
-        a1 = sos[:,:,4]
-        a2 = sos[:,:,5]
+        # extract gain, poles, and zeros
+        g = sos[:,:,0] 
+        pole_real = sos[:,:,1]
+        pole_imag = sos[:,:,2]
+        zero_real = sos[:,:,4]
+        zero_imag = sos[:,:,5]
 
-        # Eq. 4 from Nercessian et al. 2021
-        a1 = 2 * torch.tanh(a1)
+        # ensure stability
+        pole = torch.complex(pole_real, pole_imag)
+        pole = pole * torch.tanh(pole.abs()) / pole.abs()
 
-        # Eq. 5 from above
-        a2 = ( (2 - torch.abs(a1)) * torch.tanh(a2) + torch.abs(a1) ) / 2
+        # compute coefficients
+        b0 = g
+        b1 = -2 * zero_real
+        b2 = (zero_real ** 2) + (zero_imag ** 2)
+        a0 = torch.ones(g.shape, device=g.device)
+        a1 = -2 * pole.real
+        a2 = (pole.real ** 2) + (pole.imag ** 2)
 
         # reconstruct SOS
         out_sos = torch.stack([b0, b1, b2, a0, a1, a2], dim=-1)
@@ -81,11 +86,11 @@ class MLPModel(IIRNet):
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
         #optimizer = torch.optim.SGD(self.parameters(), lr=self.hparams.lr)
-        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=4, verbose=True)
+        #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=4, verbose=True)
         #lr_scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=1e-5, max_lr=1e-3, verbose=True)
-        #lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        #                                          optimizer, 
-        #                                          self.hparams.max_epochs, verbose=True)
+        lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                                                  optimizer, 
+                                                  self.hparams.max_epochs, verbose=True)
         return {
             'optimizer': optimizer,
             'lr_scheduler': lr_scheduler,
