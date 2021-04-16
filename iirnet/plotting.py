@@ -62,9 +62,8 @@ def plot_response_grid(
         # pole-zero plot
         for pole in poles:
             axs[plot_idx].scatter(np.real(pole), np.imag(pole), c='tab:red', s=10, marker='x', facecolors='none')
-            print(np.real(pole), np.imag(pole))
         for zero in zeros:
-            axs[plot_idx].scatter(np.real(zero), np.imag(zero), c='tab:orange', s=10)
+            axs[plot_idx].scatter(np.real(zero), np.imag(zero), c='tab:red', s=10, facecolors='none')
 
         # unit circle
         unit_circle = circle1 = plt.Circle((0, 0), 1, color='k', fill=False)
