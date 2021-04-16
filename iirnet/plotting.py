@@ -13,29 +13,33 @@ def plot_response_grid(
         target_coefs=None, 
         target_mags=None,
         num_points=512, 
+        num_filters=5,
         eps=1e-8, 
         fs=44100
     ):
 
-    ncols = 5
-    nrows = 5
-    pred_coefs = pred_coefs[:ncols*nrows]
+    ncols = 2
+    nrows = num_filters
+    pred_coefs = pred_coefs[:num_filters]
 
     if target_coefs is not None:
-        target = target_coefs[:ncols*nrows]
+        target = target_coefs[:num_filters]
     elif target_mags is not None:
-        target = target_mags[:ncols*nrows]
+        target = target_mags[:num_filters]
     else:
         raise ValueError("Must pass either `target_coefs` or `target_mags`.")
 
-    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=(12, 12))
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=(6, 12))
     axs = axs.reshape(-1)
 
     for idx, (p, t) in enumerate(zip(pred_coefs, target)):
 
+        mag_idx = idx * 2
+        plot_idx = mag_idx + 1
+
+        zeros,poles,k = scipy.signal.sos2zpk(p.squeeze())
         w_pred, h_pred = signal.sosfreqz(p, worN=num_points, fs=fs)
         mag_pred = 20 * np.log10(np.abs(h_pred.squeeze()) + 1e-8)
-
 
         if target_coefs is not None:
             w_target, h_target = signal.sosfreqz(t, worN=num_points, fs=fs)
@@ -43,22 +47,39 @@ def plot_response_grid(
         else:
             mag_target = t.squeeze()
 
-        axs[idx].plot(w_pred, mag_target, color='b', label="target")
-        axs[idx].plot(w_pred, mag_pred, color='r', label="pred")
-        axs[idx].set_xscale('log')
-        axs[idx].set_ylim([-60, 40])
-        #axs[0].legend()
-        axs[idx].grid()
-        axs[idx].spines['top'].set_visible(False)
-        axs[idx].spines['right'].set_visible(False)
-        axs[idx].spines['bottom'].set_visible(False)
-        axs[idx].spines['left'].set_visible(False)
+        axs[mag_idx].plot(w_pred, mag_target, color='tab:blue', label="target")
+        axs[mag_idx].plot(w_pred, mag_pred, color='tab:red', label="pred")
+        axs[mag_idx].set_xscale('log')
+        axs[mag_idx].set_ylim([-60, 40])
+        axs[mag_idx].grid()
+        axs[mag_idx].spines['top'].set_visible(False)
+        axs[mag_idx].spines['right'].set_visible(False)
+        axs[mag_idx].spines['bottom'].set_visible(False)
+        axs[mag_idx].spines['left'].set_visible(False)
+        axs[mag_idx].set_ylabel('Amplitude (dB)')
+        axs[mag_idx].set_xlabel('Frequency (Hz)')
 
-        if (idx) % ncols == 0:
-            axs[idx].set_ylabel('Amplitude [dB]')
+        # pole-zero plot
+        for pole in poles:
+            axs[plot_idx].scatter(np.real(pole), np.imag(pole), c='tab:red', s=10, marker='x', facecolors='none')
+            print(np.real(pole), np.imag(pole))
+        for zero in zeros:
+            axs[plot_idx].scatter(np.real(zero), np.imag(zero), c='tab:orange', s=10)
 
-        if idx > (nrows * ncols) - ncols:
-            axs[idx].set_xlabel('Frequency [Hz]')
+        # unit circle
+        unit_circle = circle1 = plt.Circle((0, 0), 1, color='k', fill=False)
+        axs[plot_idx].add_patch(unit_circle)
+        axs[plot_idx].set_ylim([-1.5, 1.5])
+        axs[plot_idx].set_xlim([-1.5, 1.5])
+        axs[plot_idx].grid()
+        axs[plot_idx].spines['top'].set_visible(False)
+        axs[plot_idx].spines['right'].set_visible(False)
+        axs[plot_idx].spines['bottom'].set_visible(False)
+        axs[plot_idx].spines['left'].set_visible(False)
+        axs[plot_idx].set_aspect('equal') 
+        axs[plot_idx].set_axisbelow(True)
+        axs[plot_idx].set_ylabel("Im")
+        axs[plot_idx].set_xlabel('Re')
 
     plt.tight_layout()
     buf = io.BytesIO()
