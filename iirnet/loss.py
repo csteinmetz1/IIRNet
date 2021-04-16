@@ -66,7 +66,7 @@ class LogMagTargetFrequencyLoss(torch.nn.Module):
             for n in np.arange(n_sections, step=2):
                 sos = input_sos[:,0:n+2,:]
                 w, input_h = signal.sosfreqz(sos, worN=target_mag.shape[-1], log=False)
-                input_mag = 20 * torch.log10(signal.mag(input_h) + eps)
+                input_mag = 20 * torch.log10(signal.mag(input_h) + eps).float()
                 mag_loss += torch.nn.functional.mse_loss(input_mag, target_mag)
         else:
             w, input_h = signal.sosfreqz(input_sos, worN=target_mag.shape[-1], log=False)
