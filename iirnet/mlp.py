@@ -57,14 +57,26 @@ class MLPModel(IIRNet):
 
         # reshape into sos format (n_section, (b0, b1, b2, a0, a1, a2))
         n_sections = self.hparams.model_order//2
-        #g = x[:,0:1] # gain
-        #sos = x[:,1:]
         sos = x.view(-1,n_sections,6)
 
-        # replace a0
-        sos[:,:,3] = 1.0
+        # extract coefficients
+        b0 = sos[:,:,0]
+        b1 = sos[:,:,1]
+        b2 = sos[:,:,2]
+        a0 = torch.ones(b0.shape, device=b0.device)
+        a1 = sos[:,:,4]
+        a2 = sos[:,:,5]
 
-        return sos
+        # Eq. 4 from Nercessian et al. 2021
+        a1 = 2 * torch.tanh(a1)
+
+        # Eq. 5 from above
+        a2 = ( (2 - torch.abs(a1)) * torch.tanh(a2) + torch.abs(a1) ) / 2
+
+        # reconstruct SOS
+        out_sos = torch.stack([b0, b1, b2, a0, a1, a2], dim=-1)
+
+        return out_sos
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.lr)

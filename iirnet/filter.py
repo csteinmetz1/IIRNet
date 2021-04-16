@@ -428,9 +428,9 @@ def generate_uniform_disk_filter(
 def generate_gaussian_peaks(
         num_points, 
         max_order, 
-        max_peaks=100,
     ):
 
+    max_peaks = max_order
     mag = np.zeros(num_points)
 
     num_peaks = torch.randint(1,max_peaks, [1])
