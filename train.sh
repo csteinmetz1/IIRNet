@@ -4,8 +4,8 @@ CUDA_VISIBLE_DEVICES=1 python train.py \
 --max_train_order 24 \
 --batch_size 128 \
 --num_workers 16 \
---lr 1e-7 \
---gradient_clip_val 2.0 \
+--lr 1e-5 \
+--gradient_clip_val 1.0 \
 --hidden_dim 8192 \
 --shuffle \
 --max_epochs 100 \
