@@ -24,7 +24,7 @@ hrtfs = HRTFDataset('./data/HRTF')
 # load models from disk
 #model = MLPModel.load_from_checkpoint('lightning_logs/version_21/checkpoints/epoch=61-step=48483.ckpt')
 #model = MLPModel.load_from_checkpoint('lightning_logs/version_16/checkpoints/epoch=39-step=31279.ckpt')
-model = MLPModel.load_from_checkpoint('lightning_logs/version_78/checkpoints/epoch=39-step=31279.ckpt')
+model = MLPModel.load_from_checkpoint('lightning_logs/version_78/checkpoints/epoch=94-step=74289.ckpt')
 n_sections = 24
 step = 4
 
@@ -38,7 +38,7 @@ errors = []
 for idx, target_h in enumerate(hrtfs, 0):
 
     target_h_mag = signal.mag(target_h)
-    target_h_ang = np.squeeze(np.unwrap(np.angle(target_h.numpy())))
+    target_h_ang = np.squeeze(np.angle(target_h.numpy()))
     target_dB = 20 * torch.log10(target_h_mag + eps)
     target_dB = target_dB - torch.mean(target_dB)
 
@@ -76,6 +76,8 @@ for idx, target_h in enumerate(hrtfs, 0):
 
         axs[mag_idx].plot(w_pred, target_dB, color='tab:blue', label="target")
         axs[mag_idx].plot(w_pred, mag_pred, color='tab:red', label="pred")
+        axs[mag_idx].plot(w_pred, mag_pred - target_dB, color='tab:green', label="error")
+
         axs[mag_idx].set_xscale('log')
         axs[mag_idx].set_ylim([-60, 40])
         axs[mag_idx].grid()
@@ -85,8 +87,10 @@ for idx, target_h in enumerate(hrtfs, 0):
         axs[mag_idx].spines['left'].set_visible(False)
         axs[mag_idx].set_ylabel('Amplitude (dB)')
         axs[mag_idx].set_xlabel('Frequency (Hz)')
+        axs[mag_idx].legend()
 
-        axs[phs_idx].plot(w_pred, np.squeeze(np.unwrap(np.angle(h_pred))), color='tab:red', label="pred")
+        axs[phs_idx].plot(w_pred, np.squeeze(np.angle(h_pred)), color='tab:red', label="pred")
+        axs[phs_idx].plot(w_pred, target_h_ang, color='tab:blue', label="target")
         axs[phs_idx].plot(w_pred, target_h_ang, color='tab:blue', label="target")
         axs[phs_idx].set_xscale('log')
         #axs[phs_idx].set_ylim([-60, 40])
