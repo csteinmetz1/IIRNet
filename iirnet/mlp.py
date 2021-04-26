@@ -70,10 +70,22 @@ class MLPModel(IIRNet):
         pole = torch.complex(pole_real, pole_imag)
         pole = pole * torch.tanh(pole.abs()) / pole.abs()
 
-        # compute coefficients
+        #ensure zeros inside unit circle
+        zero = torch.complex(zero_real, zero_imag)
+        zero = zero * torch.tanh(zero.abs()) / zero.abs()
+
+        #Fix filter gain to be 1 
+        # b0 = torch.ones(g.shape, device=g.device)
+        # b1 = -2 * zero_real
+        # b2 = ((zero_real ** 2) + (zero_imag ** 2))
+        # a0 = torch.ones(g.shape, device=g.device)
+        # a1 = -2 * pole.real
+        # a2 = (pole.real ** 2) + (pole.imag ** 2)
+
+        #Apply gain g to numerator by multiplying each coefficient by g 
         b0 = g
-        b1 = -2 * zero_real
-        b2 = (zero_real ** 2) + (zero_imag ** 2)
+        b1 = g * -2 * zero.real
+        b2 = g * ((zero.real ** 2) + (zero.imag ** 2))
         a0 = torch.ones(g.shape, device=g.device)
         a1 = -2 * pole.real
         a2 = (pole.real ** 2) + (pole.imag ** 2)

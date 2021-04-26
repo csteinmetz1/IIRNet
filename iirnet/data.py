@@ -22,6 +22,7 @@ class IIRFilterDataset(torch.utils.data.Dataset):
                 method = "char_poly",
                 num_points = 512,
                 max_order = 10,
+                min_order = None,
                 eps = 1e-8,
                 num_examples = 10000,
                 standard_norm = False,
@@ -29,6 +30,7 @@ class IIRFilterDataset(torch.utils.data.Dataset):
         super(IIRFilterDataset, self).__init__()
         self.num_points = num_points
         self.max_order = max_order
+        self.min_order = min_order
         self.eps = eps
         self.num_examples = num_examples
         self.standard_norm = standard_norm
@@ -49,6 +51,10 @@ class IIRFilterDataset(torch.utils.data.Dataset):
             self.generate_filter = generate_uniform_disk_filter
         elif method == "gaussian_peaks":
             self.generate_filter = generate_gaussian_peaks
+        elif method == "normal_poly":
+            self.generate_filter = generate_normal_poly_filter
+        elif method == 'actual_uniform_disk':
+            self.generate_filter = generate_actual_uniform_disk_filter
         else:
             raise ValueError(f"Invalid method: {method}")
         
