@@ -18,6 +18,7 @@ import os
 import glob 
 
 pl.seed_everything(42)
+np.random.seed(1337)
 eps = 1e-8
 gpu = False
 
@@ -46,18 +47,26 @@ args = parser.parse_args()
 # prepare testing datasets
 mag_loss = LogMagTargetFrequencyLoss()
 
-args.num_val_examples = 2 ##bash script not recognizing this variable?
+filter_names = [
+'gaussian_peaks', 'parametric',
+'uniform_parametric', 'char_poly','uniform_disk',
+'uniform_biquad', 'normal_poly', 'actual_uniform_disk'
+]
+
+args.num_val_examples = 10 ##bash script not recognizing this variable?
+
 val_datasetA = IIRFilterDataset(method="gaussian_peaks",
                                num_points=args.num_points, 
                                max_order=args.max_train_order, 
                                num_examples=args.num_val_examples,
                                precompute=args.precompute)
 
-val_datasetB = IIRFilterDataset(method="pass",
-                               num_points=args.num_points, 
-                               max_order=args.max_train_order, 
-                               num_examples=args.num_val_examples,
-                               precompute=args.precompute)
+# val_datasetB = IIRFilterDataset(method="pass",
+#                                num_points=args.num_points, 
+#                                max_order=args.max_train_order, 
+#                                num_examples=args.num_val_examples,
+#                                precompute=args.precompute)
+
 
 val_datasetC = IIRFilterDataset(method="parametric",
                                num_points=args.num_points, 
@@ -104,12 +113,140 @@ val_datasetI = IIRFilterDataset(method="actual_uniform_disk",
                                precompute=args.precompute)
 
 val_dataset = torch.utils.data.ConcatDataset([
-  val_datasetA, val_datasetB, val_datasetC,
+  val_datasetA, val_datasetC,
   val_datasetD, val_datasetE, val_datasetF,
   val_datasetG, val_datasetH, val_datasetI
   ])
 
 # load models from disk
+for model_num in range(3):
+    version = str(model_num)
+    path = glob.glob(os.path.join('lightning_logs/version_'+version+'/checkpoints/', "*.ckpt"))
+    print(path)
+    model = MLPModel.load_from_checkpoint(path[0])
+    n_sections = 24
+    step = 4
+
+    model.eval()
+
+    if gpu:
+        model.to("cuda")
+
+    errors = []
+
+    sub_error_holder = []
+
+    for idx, rand_filter in enumerate(val_dataset, 0):
+        mag, phs, real, imag, sos = rand_filter
+        target_h_mag = mag 
+        target_h_ang = phs 
+        target_dB = mag 
+
+        with torch.no_grad():
+            if gpu: 
+                target_dB = target_dB.to("cuda")
+            pred_sos = model(target_dB)
+
+        # here we can loop over each sub filter and measure response
+        target_dB = target_dB.squeeze()
+
+        subfilters = []
+        for n in np.arange(n_sections, step=step):
+            sos = pred_sos[:,0:n+2,:]
+            w, input_h = signal.sosfreqz(sos, worN=target_h_mag.shape[-1])
+            input_dB  = 20 * torch.log10(signal.mag(input_h) + eps)
+            input_dB = input_dB.squeeze()
+            subfilters.append(input_dB.cpu().squeeze().numpy())
+
+        error = torch.nn.functional.mse_loss(input_dB, target_dB)
+        sub_error_holder.append(error.item())
+
+        errors.append(error.item())
+        # print(f"{idx}/{len(val_dataset)}: MSE: {np.mean(errors):0.2f} dB")
+
+        if ((idx+1)%args.num_val_examples==0):
+            sampling_method = filter_names[idx//args.num_val_examples]
+            print('\n Error for '+sampling_method)
+            sub_error = np.mean(sub_error_holder)
+            print(f"MSE: {sub_error:0.2f} dB")
+            sub_error_holder = []
+
+        if True:
+            mag_idx = 0
+            phs_idx = 1
+            plot_idx = 1
+
+            fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(9, 3))
+
+            zeros,poles,k = scipy.signal.sos2zpk(pred_sos.squeeze())
+            w_pred, h_pred = signal.sosfreqz(pred_sos, worN=target_h_mag.shape[-1], fs=44100)
+            mag_pred = 20 * np.log10(np.abs(h_pred.squeeze()) + 1e-8)
+
+            axs[mag_idx].plot(w_pred, target_dB, color='tab:blue', label="target")
+            axs[mag_idx].plot(w_pred, mag_pred, color='tab:red', label="pred")
+            # axs[mag_idx].plot(w_pred, mag_pred - target_dB, color='tab:green', label="error")
+
+            # axs[mag_idx].set_xscale('log')
+            axs[mag_idx].set_ylim([-60, 40])
+            axs[mag_idx].grid()
+            axs[mag_idx].spines['top'].set_visible(False)
+            axs[mag_idx].spines['right'].set_visible(False)
+            axs[mag_idx].spines['bottom'].set_visible(False)
+            axs[mag_idx].spines['left'].set_visible(False)
+            axs[mag_idx].set_ylabel('Amplitude (dB)')
+            axs[mag_idx].set_xlabel('Frequency (Hz)')
+            axs[mag_idx].legend()
+
+            # axs[phs_idx].plot(w_pred, np.squeeze(np.unwrap(np.angle(h_pred))), color='tab:red', label="pred")
+            # axs[phs_idx].plot(w_pred, np.unwrap(target_h_ang), color='tab:blue', label="target")
+            # # axs[phs_idx].plot(w_pred, target_h_ang, color='tab:blue', label="target")
+            # axs[phs_idx].set_xscale('log')
+            # #axs[phs_idx].set_ylim([-60, 40])
+            # axs[phs_idx].grid()
+            # axs[phs_idx].spines['top'].set_visible(False)
+            # axs[phs_idx].spines['right'].set_visible(False)
+            # axs[phs_idx].spines['bottom'].set_visible(False)
+            # axs[phs_idx].spines['left'].set_visible(False)
+            # axs[phs_idx].set_ylabel('Angle (radians)')
+
+            # pole-zero plot
+            for pole in poles:
+                axs[plot_idx].scatter(
+                                np.real(pole), 
+                                np.imag(pole), 
+                                c='tab:red', 
+                                s=10, 
+                                marker='x', 
+                                facecolors='none')
+            for zero in zeros:
+                axs[plot_idx].scatter(
+                                np.real(zero), 
+                                np.imag(zero), 
+                                s=10, 
+                                marker='o', 
+                                facecolors='none', 
+                                edgecolors='tab:red')
+
+            # unit circle
+            unit_circle = circle1 = plt.Circle((0, 0), 1, color='k', fill=False,zorder=1)
+            axs[plot_idx].add_patch(unit_circle)
+            axs[plot_idx].set_ylim([-1.1, 1.1])
+            axs[plot_idx].set_xlim([-1.1, 1.1])
+            axs[plot_idx].grid()
+            axs[plot_idx].spines['top'].set_visible(False)
+            axs[plot_idx].spines['right'].set_visible(False)
+            axs[plot_idx].spines['bottom'].set_visible(False)
+            axs[plot_idx].spines['left'].set_visible(False)
+            axs[plot_idx].set_aspect('equal') 
+            axs[plot_idx].set_axisbelow(True)
+            axs[plot_idx].set_ylabel("Im")
+            axs[plot_idx].set_xlabel('Re')
+
+            plt.tight_layout()
+            plt.savefig('./data/plots/synth/version_'+str(model_num)+'_{:02d}.png'.format(idx))
+            plt.close('all')
+    print(f"{idx}/{len(val_dataset)}: MSE: {np.mean(errors):0.2f} dB")
+
 version = str(2)
 path = glob.glob(os.path.join('lightning_logs/version_'+version+'/checkpoints/', "*.ckpt"))
 print(path)
