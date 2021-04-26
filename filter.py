@@ -146,7 +146,6 @@ def generate_parametric_eq(num_points, max_order, f_s=48000):
     phs = np.unwrap(np.angle(h))
     real = np.real(h)
     imag = np.imag(h)
-
     mag = 20 * np.log10(mag + 1e-8)
 
     return mag, phs, real, imag, sos
@@ -287,7 +286,6 @@ def generate_uniform_parametric_eq(num_points, max_order, f_s=48000):
     phs = np.unwrap(np.angle(h))
     real = np.real(h)
     imag = np.imag(h)
-
     mag = 20 * np.log10(mag + 1e-8)
 
     return mag, phs, real, imag, sos
@@ -323,7 +321,6 @@ def generate_characteristic_poly_filter(num_points, max_order, min_order=None, e
         num_poly = np.real(np.polymul([1,-1*all_num[2*ii]],[1,-1*all_num[2*ii+1]]))
         den_poly = np.real(np.polymul([1,-1*all_den[2*ii]],[1,-1*all_den[2*ii+1]]))
         sos.append(np.hstack((num_poly,den_poly)))
-
     if chosen_max%2==1: # add an extra section to make even number of sections
         num_poly = np.real(np.polymul([1,0],[1,-1*all_num[-1]]))
         den_poly = np.real(np.polymul([1,0],[1,-1*all_den[-1]]))
@@ -332,11 +329,12 @@ def generate_characteristic_poly_filter(num_points, max_order, min_order=None, e
     sos = np.asarray(sos)
     num_sos = sos.shape[0]
     sos_proto = np.tile(np.asarray([1.0,0,0,1.0,0,0]),((chosen_ord+1)//2,1))
+
     sos_proto[:num_sos,:] = sos
     sos = sos_proto
     my_norms = sos[:,3]
     sos = sos/my_norms[:,None] ##sosfreqz requires sos[:,3]=1
-    
+
     w, h = scipy.signal.sosfreqz(sos, worN=num_points)
     mag = np.abs(h)
     phs = np.unwrap(np.angle(h))
@@ -348,6 +346,7 @@ def generate_characteristic_poly_filter(num_points, max_order, min_order=None, e
     out = mag, phs, real, imag, sos
 
     return out
+
 
 def generate_uniform_disk_filter(
         num_points, 
@@ -381,6 +380,26 @@ def generate_uniform_disk_filter(
     if not log:
         zeros_args = torch.distributions.uniform.Uniform(0.0,np.pi).sample(num_ord//2)
         poles_args = torch.distributions.uniform.Uniform(0.0,np.pi).sample(num_ord//2)
+
+def generate_uniform_disk_filter(num_points, max_order, eps=1e-8, log=False):
+    rng = default_rng()
+    ##a and b are used for the loguniform sampling
+    a = 20.0/22050.0*np.pi ##MIN CAN'T BE ZERO, CHOOSING 20HZ AS MINIMUM POLE/ZERO FREQUENCY
+    b = np.pi 
+    norm = 0.95 ##SHOULD BE HYPERPARAMETER
+
+    max_ord = max_order
+    sos = []
+    num_ord = max_ord ##Comment these out when we can handle variable order filters
+    den_ord = max_ord ##
+    chosen_max = np.max((num_ord,den_ord))
+    all_num = np.zeros(chosen_max,dtype=np.cdouble)
+    all_den = np.zeros(chosen_max,dtype=np.cdouble)
+    zeros_mags = rng.uniform(low=0.0,high=norm,size=(num_ord)//2)
+    poles_mags = rng.uniform(low=0.0,high=norm,size=(den_ord)//2)
+    if not log:
+        zeros_args = rng.uniform(low=0.0,high=np.pi,size=(num_ord)//2)
+        poles_args = rng.uniform(low=0.0,high=np.pi,size=(den_ord)//2)
     else:
         zeros_args = loguniform.rvs(a,b,size=(num_ord)//2)
         poles_args = loguniform.rvs(a,b,size=(num_ord)//2)
@@ -481,12 +500,23 @@ def generate_normal_poly_filter(num_points, max_order, min_order=None, eps=1e-8)
     sos = np.asarray(sos)
     num_sos = sos.shape[0]
     sos_proto = np.tile(np.asarray([1.0,0,0,1.0,0,0]),((chosen_ord+1)//2,1))
+        zeros_mags = rng.uniform(low=0.0,high=1.0)
+        poles_mags = rng.uniform(low=0.0,high=1.0)
+        num_poly = [1,-1*zeros_mags,0]
+        den_poly = [1,-1*poles_mags,0]
+        sos.append(np.hstack((num_poly,den_poly)))
+        JT_zeros = np.hstack((JT_zeros,-1*zeros_mags))
+        JT_poles = np.hstack((JT_poles,-1*poles_mags))
+    sos = np.asarray(sos)
+    num_sos = sos.shape[0]
+    sos_proto = np.tile(np.asarray([1.0,0,0,1.0,0,0]),((max_ord+1)//2,1))
     sos_proto[:num_sos,:] = sos
     sos = sos_proto
     my_norms = sos[:,3]
     sos = sos/my_norms[:,None] ##sosfreqz requires sos[:,3]=1
     
     w, h = scipy.signal.sosfreqz(sos, worN=num_points)
+
     mag = np.abs(h)
     phs = np.unwrap(np.angle(h))
     real = np.real(h)
@@ -497,4 +527,3 @@ def generate_normal_poly_filter(num_points, max_order, min_order=None, eps=1e-8)
     out = mag, phs, real, imag, sos
 
     return out
-
