@@ -59,14 +59,50 @@ train_datasetD = IIRFilterDataset(method="uniform_parametric",
                                num_examples=args.num_train_examples,
                                precompute=args.precompute)
 
-train_dataset = torch.utils.data.ConcatDataset([train_datasetA])
+train_datasetE = IIRFilterDataset(method="char_poly",
+                               num_points=args.num_points, 
+                               max_order=args.max_train_order, 
+                               num_examples=args.num_train_examples,
+                               precompute=args.precompute)
+
+train_datasetF = IIRFilterDataset(method="uniform_disk",
+                               num_points=args.num_points, 
+                               max_order=args.max_train_order, 
+                               num_examples=args.num_train_examples,
+                               precompute=args.precompute)
+
+train_datasetG = IIRFilterDataset(method="uniform_biquad",
+                               num_points=args.num_points, 
+                               max_order=args.max_train_order, 
+                               num_examples=args.num_train_examples,
+                               precompute=args.precompute)
+
+train_datasetH = IIRFilterDataset(method="normal_poly",
+                               num_points=args.num_points, 
+                               max_order=args.max_train_order, 
+                               num_examples=args.num_train_examples,
+                               precompute=args.precompute)
+
+
+all_datasets = {
+  'gaussian_peaks':train_datasetA,
+  'pass': train_datasetB,
+  'parametric': train_datasetC,
+  'uniform_parametric': train_datasetD,
+  'char_poly': train_datasetE,
+  'uniform_disk': train_datasetF,
+  'uniform_biquad': train_datasetG,
+  'normal_poly': train_datasetH
+}
+
+train_dataset = torch.utils.data.ConcatDataset([all_datasets[args.filter_method]])
 
 train_dataloader = torch.utils.data.DataLoader(train_dataset, 
                                              shuffle=args.shuffle,
                                              batch_size=args.batch_size,
                                              num_workers=args.num_workers)
 
-
+args.num_val_examples = 1000 ##bash script not recognizing this variable?
 val_datasetA = IIRFilterDataset(method="gaussian_peaks",
                                num_points=args.num_points, 
                                max_order=args.max_train_order, 
@@ -92,7 +128,36 @@ val_datasetD = IIRFilterDataset(method="uniform_parametric",
                                num_examples=args.num_val_examples,
                                precompute=args.precompute)
 
-val_dataset = torch.utils.data.ConcatDataset([val_datasetA])
+val_datasetE = IIRFilterDataset(method="char_poly",
+                               num_points=args.num_points, 
+                               max_order=args.max_train_order, 
+                               min_order=args.max_train_order//2,
+                               num_examples=args.num_val_examples,
+                               precompute=args.precompute)
+
+val_datasetF = IIRFilterDataset(method="uniform_disk",
+                               num_points=args.num_points, 
+                               max_order=args.max_train_order, 
+                               num_examples=args.num_val_examples,
+                               precompute=args.precompute)
+
+val_datasetG = IIRFilterDataset(method="uniform_biquad",
+                               num_points=args.num_points, 
+                               max_order=args.max_train_order, 
+                               num_examples=args.num_val_examples,
+                               precompute=args.precompute)
+
+val_datasetH = IIRFilterDataset(method="normal_poly",
+                               num_points=args.num_points, 
+                               max_order=args.max_train_order, 
+                               num_examples=args.num_val_examples,
+                               precompute=args.precompute)
+
+val_dataset = torch.utils.data.ConcatDataset([
+  val_datasetA, val_datasetB, val_datasetC,
+  val_datasetD, val_datasetE, val_datasetF,
+  val_datasetG, val_datasetH
+  ])
 
 val_dataloader = torch.utils.data.DataLoader(val_dataset, 
                                              shuffle=args.shuffle,
