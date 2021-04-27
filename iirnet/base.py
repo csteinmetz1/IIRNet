@@ -11,8 +11,8 @@ class IIRNet(pl.LightningModule):
     """ Base IIRNet module. """
     def __init__(self, **kwargs):
         super(IIRNet, self).__init__()
-        self.magfreqzloss = loss.LogMagTargetFrequencyLoss(priority=True)
-        self.magfreqzloss_val = loss.LogMagTargetFrequencyLoss()
+        self.magfreqzloss = loss.LogMagTargetFrequencyLoss(priority=False)
+        self.magfreqzloss_val = loss.LogMagTargetFrequencyLoss(priority=False)
 
     def forward(self, x):
         pass
