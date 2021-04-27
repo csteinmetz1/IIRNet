@@ -12,10 +12,10 @@ class SGDFilterDesign(torch.nn.Module):
     """
     def __init__(self, 
                 n_iters=1000, 
-                lr=1e-1, 
+                lr=1e-4, 
                 schedule_lr=False, 
-                pole_zero=False, 
-                verbose=False
+                pole_zero=True, 
+                verbose=True
             ):
         super(SGDFilterDesign, self).__init__()
         self.n_iters = n_iters
@@ -23,15 +23,16 @@ class SGDFilterDesign(torch.nn.Module):
         self.schedule_lr = schedule_lr
         self.pole_zero = pole_zero
         self.verbose = verbose
-        self.coefs = torch.rand(1,16,6, requires_grad=False)
+        self.coefs = torch.ones(1,16,6, requires_grad=False)
+        self.coefs.uniform_(0.5, 0.9)
 
         self.magtarget = LogMagTargetFrequencyLoss()
 
     def init_sos(self):
         # create the biquad poles and zeros we will optimize
-        self.sos = torch.rand(1,16,6, requires_grad=True)
+        self.sos = torch.ones(1,16,6, requires_grad=True)
         with torch.no_grad():
-            self.sos.data = self.coefs.data
+            self.sos.data.uniform_(0.5, 0.9)
 
         # setup optimization
         self.optimizer = torch.optim.SGD([self.sos], lr=self.lr)
@@ -70,7 +71,22 @@ class SGDFilterDesign(torch.nn.Module):
                     # reconstruct SOS
                     out_sos = torch.stack([b0, b1, b2, a0, a1, a2], dim=-1)
                 else:
-                    out_sos = self.sos
+                    # extract coefficients
+                    b0 = self.sos[:,:,0]
+                    b1 = self.sos[:,:,1]
+                    b2 = self.sos[:,:,2]
+                    a0 = torch.ones(b0.shape, device=b0.device)
+                    a1 = self.sos[:,:,4]
+                    a2 = self.sos[:,:,5]
+
+                    # Eq. 4 from Nercessian et al. 2021
+                    a1 = 2 * torch.tanh(a1)
+
+                    # Eq. 5 from above
+                    a2 = ( (2 - torch.abs(a1)) * torch.tanh(a2) + torch.abs(a1) ) / 2
+
+                    # reconstruct SOS
+                    out_sos = torch.stack([b0, b1, b2, a0, a1, a2], dim=-1)
 
                 loss = self.magtarget(out_sos, target_dB.view(1,-1))
                 self.optimizer.zero_grad()
