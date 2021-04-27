@@ -6,6 +6,7 @@ import scipy.signal
 import numpy as np
 import pytorch_lightning as pl
 import matplotlib.pyplot as plt
+from collections import defaultdict
 
 from data.hrtf import HRTFDataset
 from iirnet.mlp import MLPModel
@@ -21,7 +22,7 @@ eps = 1e-8
 gpu = False
 num_points = 512
 max_eval_order = 32
-examples_per_method = 1000
+examples_per_method = 100
 precompute = True
 shuffle = False
 
@@ -85,8 +86,8 @@ datasets = {
 
 # model checkpoint paths
 normal_poly_ckpt        = 'lightning_logs/normal_poly/lightning_logs/version_0/checkpoints/epoch=81-step=64123.ckpt'
-normal_biquad_ckpt      = 'lightning_logs/normal_poly/lightning_logs/version_0/checkpoints/epoch=81-step=64123.ckpt'
-uniform_disk_ckpt       = 'lightning_logs/normal_poly/lightning_logs/version_0/checkpoints/epoch=81-step=64123.ckpt'
+normal_biquad_ckpt      = 'lightning_logs/normal_biquad/lightning_logs/version_0/checkpoints/epoch=70-step=55521.ckpt'
+uniform_disk_ckpt       = 'lightning_logs/uniform_disk/lightning_logs/version_0/checkpoints/epoch=89-step=70379.ckpt'
 uniform_mag_disk_ckpt   = 'lightning_logs/normal_poly/lightning_logs/version_0/checkpoints/epoch=81-step=64123.ckpt'
 char_poly_ckpt          = 'lightning_logs/normal_poly/lightning_logs/version_0/checkpoints/epoch=81-step=64123.ckpt'
 uniform_parametric_ckpt = 'lightning_logs/normal_poly/lightning_logs/version_0/checkpoints/epoch=81-step=64123.ckpt'
@@ -94,6 +95,9 @@ all_ckpt                = 'lightning_logs/normal_poly/lightning_logs/version_0/c
 
 # load models from disk
 models = {
+    #"SGD (10)"          : SGDFilterDesign(n_iters=10),
+    #"SGD (100)"         : SGDFilterDesign(n_iters=100),
+    #"SGD (1000)"        : SGDFilterDesign(n_iters=1000),
     "normal_poly"       : MLPModel.load_from_checkpoint(normal_poly_ckpt),
     "normal_biquad"     : MLPModel.load_from_checkpoint(normal_biquad_ckpt),
     "uniform_disk"      : MLPModel.load_from_checkpoint(uniform_disk_ckpt),
@@ -101,7 +105,6 @@ models = {
     "char_poly"         : MLPModel.load_from_checkpoint(char_poly_ckpt),
     "uniform_parametric": MLPModel.load_from_checkpoint(uniform_parametric_ckpt),
     "all"               : MLPModel.load_from_checkpoint(all_ckpt),
-    "SGD (1000)"        : SGDFilterDesign(n_iters=100),
 }
 
 if gpu:
@@ -141,18 +144,12 @@ def evaluate_on_dataset(model, dataset, dataset_name=None):
     print()
     return errors, elapsed
 
-results = {
-    "normal_poly"       : {},
-    "normal_biquad"     : {},
-    "uniform_disk"      : {},
-    "uniform_mag_disk"  : {},
-    "char_poly"         : {},
-    "uniform_parametric": {},
-    "all"               : {}
-}
+results = defaultdict(dict)
+
 for model_name, model in models.items():
 
     model.eval()
+    all_errors, all_elapsed = [], []
 
     # evaluate on synthetic datasets
     for dataset_name, dataset in datasets.items():
@@ -166,6 +163,15 @@ for model_name, model in models.items():
             "mean_elaped" : np.mean(elapsed),
             "std_elapsed" : np.std(elapsed)
         }
+        all_errors.append(errors)
+        all_elapsed.append(elapsed)
+        
+    results[model_name]["all"] = {
+        "mean_errors" : np.mean(all_errors),
+        "mean_elapsed" : np.mean(all_elapsed)
+    }
+
+    print(f"""All MSE: {np.mean(all_errors):0.2f} dB  Time: {np.mean(all_elapsed)*1e3:0.2f} ms""")
     
     # evaluate on guitar cabinet IRs
 

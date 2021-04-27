@@ -133,3 +133,4 @@ lightning_logs/
 data/HRTF
 data/plots
 .DS_Store
+results/
