@@ -3,8 +3,8 @@ import scipy.signal
 import matplotlib.pyplot as plt
 from iirnet.data import IIRFilterDataset
 
-method = 'uniform_disk'
-dataset = IIRFilterDataset(method=method, max_order=24)
+method = 'gaussian_peaks'
+dataset = IIRFilterDataset(method=method, max_order=100)
 
 mags = []
 fig1, ax1 = plt.subplots()
@@ -14,15 +14,16 @@ for idx, batch in enumerate(dataset):
     mag, phs, real, imag, sos = batch
 
     print(idx)
-    w, h = scipy.signal.sosfreqz(sos, worN=1024, fs=44100)
+    w, h = scipy.signal.sosfreqz(sos, worN=512, fs=44100)
     z,p,k = scipy.signal.sos2zpk(sos)
 
     #for pole in p:
     #    ax2.scatter(np.real(pole), np.imag(pole), c='tab:blue', s=1)
 
-    mag_dB = 20 * np.log10(np.abs(h) + 1e-8)
-    mags.append(mag_dB)
-    ax1.plot(w, mag_dB)
+    #mag_dB = 20 * np.log10(np.abs(h) + 1e-8)
+    mag = mag.numpy()
+    mags.append(mag)
+    ax1.plot(w, mag)
     if idx > 1000: break
 
 u = np.mean(mags, axis=0)
@@ -30,7 +31,7 @@ s = np.std(mags, axis=0)
 ax1.plot(w, u, c='k')
 ax1.plot(w, u + s, c='k', linestyle='--')
 ax1.plot(w, u - s, c='k', linestyle='--')
-#ax1.set_xscale('log')
+ax1.set_xscale('log')
 ax1.set_ylim([-150, 150])
 ax1.grid()
 ax1.spines['top'].set_visible(False)
