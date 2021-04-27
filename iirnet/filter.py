@@ -38,7 +38,7 @@ def generate_pass_filter(num_points=512, max_order=2):
     real = np.real(h)
     imag = np.imag(h)
 
-    mag = np.log10(mag + 1e-8)
+    mag = 20 * np.log10(mag + 1e-8)
 
     return mag, phs, real, imag, sos
 
@@ -151,7 +151,7 @@ def generate_parametric_eq(num_points, max_order, f_s=48000):
 
     return mag, phs, real, imag, sos
 
-def generate_uniform_biquad(num_points, max_order, min_order=None, norm=1.0):
+def generate_normal_biquad(num_points, max_order, min_order=None, norm=1.0):
 
     rng = default_rng()
     if min_order==None:
@@ -414,7 +414,7 @@ def generate_uniform_disk_filter(
 
     return out
 
-def generate_actual_uniform_disk_filter(
+def generate_uniform_mag_disk_filter(
         num_points, 
         max_order, 
         min_order=None,
