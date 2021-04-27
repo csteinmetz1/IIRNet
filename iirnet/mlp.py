@@ -24,7 +24,8 @@ class MLPModel(IIRNet):
             out_features = self.hparams.hidden_dim
             if n+1 == self.hparams.num_layers: # no activation at last layer
                 my_layer = torch.nn.Linear(in_features, out_features)
-                my_layer.bias.data.fill_(0.5) # what is motivation for this init?
+                #my_layer.weight.data.fill_(0.0) 
+                my_layer.bias.data.uniform_(0.6, 0.9) 
                 self.layers.append(torch.nn.Sequential(
                     my_layer,
                 ))
@@ -96,16 +97,21 @@ class MLPModel(IIRNet):
         return out_sos
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
+        optimizer = torch.optim.AdamW(self.parameters(), lr=self.hparams.lr)
         #optimizer = torch.optim.SGD(self.parameters(), lr=self.hparams.lr)
-        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=10, verbose=True)
+        #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        #                                                optimizer, 
+        #                                                patience=25, 
+        #                                                factor=0.5,
+        #                                                verbose=True)
         #lr_scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=1e-5, max_lr=1e-3, verbose=True)
         #lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         #                                          optimizer, 
-        #                                          self.hparams.max_epochs, verbose=True)
+        #                                          self.hparams.max_epochs, 
+        #                                          verbose=True)
         return {
             'optimizer': optimizer,
-            'lr_scheduler': lr_scheduler,
+            #'lr_scheduler': None,
             'monitor': 'val_loss'
         }
 
