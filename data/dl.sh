@@ -7,8 +7,8 @@ do
   wget ftp://ftp.ircam.fr/pub/IRCAM/equipes/salles/listen/archive/SUBJECTS/IRC_$i.zip
   unzip IRC_$i.zip -d IRC_$i/
   rm IRC_$i.zip
-  cd IRC_$i/COMPENSATED/WAV
-  find . -name "*.wav" -exec ffmpeg -i {} -acodec pcm_s16le {}_16.wav -loglevel panic \;
-  cd ../../..
+  #cd IRC_$i/COMPENSATED/WAV
+  #find . -name "*.wav" -exec ffmpeg -i {} -acodec pcm_s16le {}_16.wav -loglevel panic \;
+  #cd ../../..
 done
 
