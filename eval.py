@@ -1,5 +1,7 @@
 import sys
+import time
 import torch
+import pickle
 import scipy.signal
 import numpy as np
 import pytorch_lightning as pl
@@ -7,133 +9,249 @@ import matplotlib.pyplot as plt
 
 from data.hrtf import HRTFDataset
 from iirnet.mlp import MLPModel
+from iirnet.sgd import SGDFilterDesign
 from iirnet.data import IIRFilterDataset
 from iirnet.loss import LogMagTargetFrequencyLoss
 import iirnet.signal as signal
 
-pl.seed_everything(42)
+pl.seed_everything(12)
+
+# fixed evaluation parameters
 eps = 1e-8
 gpu = False
+num_points = 512
+max_eval_order = 32
+examples_per_method = 1000
+precompute = True
+shuffle = False
+
+# error metrics
+mag_loss = LogMagTargetFrequencyLoss(priority=False)
 
 # prepare testing datasets
-mag_loss = LogMagTargetFrequencyLoss()
-rand_filters = IIRFilterDataset(max_order=100)
-gaussain_filters = IIRFilterDataset(method="gaussian_peaks", max_order=100)
-hrtfs = HRTFDataset('./data/HRTF')
+val_datasetA = IIRFilterDataset(method="normal_poly",
+                               num_points=num_points, 
+                               max_order=max_eval_order, 
+                               num_examples=examples_per_method,
+                               precompute=precompute)
+
+val_datasetB = IIRFilterDataset(method="normal_biquad",
+                               num_points=num_points, 
+                               max_order=max_eval_order, 
+                               num_examples=examples_per_method,
+                               precompute=precompute)
+
+val_datasetC = IIRFilterDataset(method="uniform_disk",
+                               num_points=num_points, 
+                               max_order=max_eval_order, 
+                               num_examples=examples_per_method,
+                               precompute=precompute)
+
+val_datasetD = IIRFilterDataset(method="uniform_mag_disk",
+                               num_points=num_points, 
+                               max_order=max_eval_order, 
+                               num_examples=examples_per_method,
+                               precompute=precompute)
+
+val_datasetE = IIRFilterDataset(method="char_poly",
+                               num_points=num_points, 
+                               max_order=max_eval_order, 
+                               num_examples=examples_per_method,
+                               precompute=precompute)
+
+val_datasetF = IIRFilterDataset(method="uniform_parametric",
+                               num_points=num_points, 
+                               max_order=max_eval_order, 
+                               num_examples=examples_per_method,
+                               precompute=precompute)
+
+val_dataset = torch.utils.data.ConcatDataset([
+  val_datasetA,
+  val_datasetB, 
+  val_datasetC, 
+  val_datasetD,
+  val_datasetE, 
+  val_datasetF]
+  )
+
+datasets = {
+    "normal_poly"       : val_datasetA,
+    "normal_biquad"     : val_datasetB,
+    "uniform_disk"      : val_datasetC,
+    "uniform_mag_disk"  : val_datasetD,
+    "char_poly"         : val_datasetE,
+    "uniform_parametric": val_datasetF,
+}
+
+# model checkpoint paths
+normal_poly_ckpt        = 'lightning_logs/normal_poly/lightning_logs/version_0/checkpoints/epoch=81-step=64123.ckpt'
+normal_biquad_ckpt      = 'lightning_logs/normal_poly/lightning_logs/version_0/checkpoints/epoch=81-step=64123.ckpt'
+uniform_disk_ckpt       = 'lightning_logs/normal_poly/lightning_logs/version_0/checkpoints/epoch=81-step=64123.ckpt'
+uniform_mag_disk_ckpt   = 'lightning_logs/normal_poly/lightning_logs/version_0/checkpoints/epoch=81-step=64123.ckpt'
+char_poly_ckpt          = 'lightning_logs/normal_poly/lightning_logs/version_0/checkpoints/epoch=81-step=64123.ckpt'
+uniform_parametric_ckpt = 'lightning_logs/normal_poly/lightning_logs/version_0/checkpoints/epoch=81-step=64123.ckpt'
+all_ckpt                = 'lightning_logs/normal_poly/lightning_logs/version_0/checkpoints/epoch=81-step=64123.ckpt'
 
 # load models from disk
-#model = MLPModel.load_from_checkpoint('lightning_logs/version_21/checkpoints/epoch=61-step=48483.ckpt')
-#model = MLPModel.load_from_checkpoint('lightning_logs/version_16/checkpoints/epoch=39-step=31279.ckpt')
-model = MLPModel.load_from_checkpoint('lightning_logs/version_78/checkpoints/epoch=94-step=74289.ckpt')
-n_sections = 24
-step = 4
-
-model.eval()
+models = {
+    "normal_poly"       : MLPModel.load_from_checkpoint(normal_poly_ckpt),
+    "normal_biquad"     : MLPModel.load_from_checkpoint(normal_biquad_ckpt),
+    "uniform_disk"      : MLPModel.load_from_checkpoint(uniform_disk_ckpt),
+    "uniform_mag_disk"  : MLPModel.load_from_checkpoint(uniform_mag_disk_ckpt),
+    "char_poly"         : MLPModel.load_from_checkpoint(char_poly_ckpt),
+    "uniform_parametric": MLPModel.load_from_checkpoint(uniform_parametric_ckpt),
+    "all"               : MLPModel.load_from_checkpoint(all_ckpt),
+    "SGD (1000)"        : SGDFilterDesign(n_iters=100),
+}
 
 if gpu:
     model.to("cuda")
 
-errors = []
+def evaluate_on_dataset(model, dataset, dataset_name=None):
 
-for idx, target_h in enumerate(hrtfs, 0):
+    errors = []
+    timings = []
+    for idx, example in enumerate(dataset, 0):
 
-    target_h_mag = signal.mag(target_h)
-    target_h_ang = np.squeeze(np.angle(target_h.numpy()))
-    target_dB = 20 * torch.log10(target_h_mag + eps)
-    target_dB = target_dB - torch.mean(target_dB)
+        target_dB, phs, real, imag, sos = example
 
-    with torch.no_grad():
-        if gpu: 
-            target_dB = target_dB.to("cuda")
-        pred_sos = model(target_dB)
+        if gpu: target_dB = target_dB.to("cuda")
 
-    # here we can loop over each sub filter and measure response
-    target_dB = target_dB.squeeze()
+        # predict filter coeffieicnts (do timings here)
+        tic = time.perf_counter()
+        with torch.no_grad():
+            pred_sos = model(target_dB.view(1,1,-1))
+        toc = time.perf_counter()
+        elapsed = toc - tic
 
-    subfilters = []
-    for n in np.arange(n_sections, step=step):
-        sos = pred_sos[:,0:n+2,:]
-        w, input_h = signal.sosfreqz(sos, worN=target_h.shape[-1])
+        # compute response of the predicted filter
+        w, input_h = signal.sosfreqz(pred_sos, worN=target_dB.shape[-1])
         input_dB  = 20 * torch.log10(signal.mag(input_h) + eps)
         input_dB = input_dB.squeeze()
-        subfilters.append(input_dB.cpu().squeeze().numpy())
+        input_dB = input_dB.cpu().squeeze()
+        target_dB = target_dB.cpu().squeeze()
 
-    error = torch.nn.functional.mse_loss(input_dB, target_dB)
+        error = torch.nn.functional.mse_loss(input_dB, target_dB)
+        errors.append(error.item())
+        timings.append(elapsed)
 
-    errors.append(error.item())
-    print(f"{idx}/{len(hrtfs)}: MSE: {np.mean(errors):0.2f} dB")
+        sys.stdout.write(f"* {idx+1}/{len(dataset)}: MSE: {np.mean(errors):0.2f} dB  Time: {np.mean(elapsed)*1e3:0.2f} ms\r")
+        sys.stdout.flush()
 
-    if True:
-        mag_idx = 0
-        phs_idx = 1
-        plot_idx = 2
+    print()
+    return errors, elapsed
 
-        fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(9, 3))
+results = {
+    "normal_poly"       : {},
+    "normal_biquad"     : {},
+    "uniform_disk"      : {},
+    "uniform_mag_disk"  : {},
+    "char_poly"         : {},
+    "uniform_parametric": {},
+    "all"               : {}
+}
+for model_name, model in models.items():
 
-        zeros,poles,k = scipy.signal.sos2zpk(pred_sos.squeeze())
-        w_pred, h_pred = signal.sosfreqz(pred_sos, worN=target_h.shape[-1], fs=44100)
-        mag_pred = 20 * np.log10(np.abs(h_pred.squeeze()) + 1e-8)
+    model.eval()
 
-        axs[mag_idx].plot(w_pred, target_dB, color='tab:blue', label="target")
-        axs[mag_idx].plot(w_pred, mag_pred, color='tab:red', label="pred")
-        axs[mag_idx].plot(w_pred, mag_pred - target_dB, color='tab:green', label="error")
+    # evaluate on synthetic datasets
+    for dataset_name, dataset in datasets.items():
+        print(f"Evaluating {model_name} model on {dataset_name} dataset...")
+        errors, elapsed = evaluate_on_dataset(model, dataset)
+        results[model_name][dataset_name] = {
+            "errors" : errors,
+            "mean_error" : np.mean(errors),
+            "std_error" : np.std(errors),
+            "elapsed" : elapsed,
+            "mean_elaped" : np.mean(elapsed),
+            "std_elapsed" : np.std(elapsed)
+        }
+    
+    # evaluate on guitar cabinet IRs
 
-        axs[mag_idx].set_xscale('log')
-        axs[mag_idx].set_ylim([-60, 40])
-        axs[mag_idx].grid()
-        axs[mag_idx].spines['top'].set_visible(False)
-        axs[mag_idx].spines['right'].set_visible(False)
-        axs[mag_idx].spines['bottom'].set_visible(False)
-        axs[mag_idx].spines['left'].set_visible(False)
-        axs[mag_idx].set_ylabel('Amplitude (dB)')
-        axs[mag_idx].set_xlabel('Frequency (Hz)')
-        axs[mag_idx].legend()
+    # evaluate on measured HRTFs
+    
+    print()
 
-        axs[phs_idx].plot(w_pred, np.squeeze(np.angle(h_pred)), color='tab:red', label="pred")
-        axs[phs_idx].plot(w_pred, target_h_ang, color='tab:blue', label="target")
-        axs[phs_idx].plot(w_pred, target_h_ang, color='tab:blue', label="target")
-        axs[phs_idx].set_xscale('log')
-        #axs[phs_idx].set_ylim([-60, 40])
-        axs[phs_idx].grid()
-        axs[phs_idx].spines['top'].set_visible(False)
-        axs[phs_idx].spines['right'].set_visible(False)
-        axs[phs_idx].spines['bottom'].set_visible(False)
-        axs[phs_idx].spines['left'].set_visible(False)
-        axs[phs_idx].set_ylabel('Angle (radians)')
+with open(f'results/results.pkl', 'wb') as handle:
+    pickle.dump(
+            results, 
+            handle, 
+            protocol=pickle.HIGHEST_PROTOCOL
+        )
 
-        # pole-zero plot
-        for pole in poles:
-            axs[plot_idx].scatter(
-                            np.real(pole), 
-                            np.imag(pole), 
-                            c='tab:red', 
-                            s=10, 
-                            marker='x', 
-                            facecolors='none')
-        for zero in zeros:
-            axs[plot_idx].scatter(
-                            np.real(zero), 
-                            np.imag(zero), 
-                            s=10, 
-                            marker='o', 
-                            facecolors='none', 
-                            edgecolors='tab:red')
 
-        # unit circle
-        unit_circle = circle1 = plt.Circle((0, 0), 1, color='k', fill=False)
-        axs[plot_idx].add_patch(unit_circle)
-        axs[plot_idx].set_ylim([-1.5, 1.5])
-        axs[plot_idx].set_xlim([-1.5, 1.5])
-        axs[plot_idx].grid()
-        axs[plot_idx].spines['top'].set_visible(False)
-        axs[plot_idx].spines['right'].set_visible(False)
-        axs[plot_idx].spines['bottom'].set_visible(False)
-        axs[plot_idx].spines['left'].set_visible(False)
-        axs[plot_idx].set_aspect('equal') 
-        axs[plot_idx].set_axisbelow(True)
-        axs[plot_idx].set_ylabel("Im")
-        axs[plot_idx].set_xlabel('Re')
+if False:
+    mag_idx = 0
+    phs_idx = 1
+    plot_idx = 2
 
-        plt.tight_layout()
-        plt.savefig(f'./data/plots/{idx}.png')
-        plt.close('all')
+    fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(9, 3))
+
+    zeros,poles,k = scipy.signal.sos2zpk(pred_sos.squeeze())
+    w_pred, h_pred = signal.sosfreqz(pred_sos, worN=target_h.shape[-1], fs=44100)
+    mag_pred = 20 * np.log10(np.abs(h_pred.squeeze()) + 1e-8)
+
+    axs[mag_idx].plot(w_pred, target_dB, color='tab:blue', label="target")
+    axs[mag_idx].plot(w_pred, mag_pred, color='tab:red', label="pred")
+    axs[mag_idx].plot(w_pred, mag_pred - target_dB, color='tab:green', label="error")
+
+    axs[mag_idx].set_xscale('log')
+    axs[mag_idx].set_ylim([-60, 40])
+    axs[mag_idx].grid()
+    axs[mag_idx].spines['top'].set_visible(False)
+    axs[mag_idx].spines['right'].set_visible(False)
+    axs[mag_idx].spines['bottom'].set_visible(False)
+    axs[mag_idx].spines['left'].set_visible(False)
+    axs[mag_idx].set_ylabel('Amplitude (dB)')
+    axs[mag_idx].set_xlabel('Frequency (Hz)')
+    axs[mag_idx].legend()
+
+    axs[phs_idx].plot(w_pred, np.squeeze(np.angle(h_pred)), color='tab:red', label="pred")
+    axs[phs_idx].plot(w_pred, target_h_ang, color='tab:blue', label="target")
+    axs[phs_idx].plot(w_pred, target_h_ang, color='tab:blue', label="target")
+    axs[phs_idx].set_xscale('log')
+    #axs[phs_idx].set_ylim([-60, 40])
+    axs[phs_idx].grid()
+    axs[phs_idx].spines['top'].set_visible(False)
+    axs[phs_idx].spines['right'].set_visible(False)
+    axs[phs_idx].spines['bottom'].set_visible(False)
+    axs[phs_idx].spines['left'].set_visible(False)
+    axs[phs_idx].set_ylabel('Angle (radians)')
+
+    # pole-zero plot
+    for pole in poles:
+        axs[plot_idx].scatter(
+                        np.real(pole), 
+                        np.imag(pole), 
+                        c='tab:red', 
+                        s=10, 
+                        marker='x', 
+                        facecolors='none')
+    for zero in zeros:
+        axs[plot_idx].scatter(
+                        np.real(zero), 
+                        np.imag(zero), 
+                        s=10, 
+                        marker='o', 
+                        facecolors='none', 
+                        edgecolors='tab:red')
+
+    # unit circle
+    unit_circle = circle1 = plt.Circle((0, 0), 1, color='k', fill=False)
+    axs[plot_idx].add_patch(unit_circle)
+    axs[plot_idx].set_ylim([-1.5, 1.5])
+    axs[plot_idx].set_xlim([-1.5, 1.5])
+    axs[plot_idx].grid()
+    axs[plot_idx].spines['top'].set_visible(False)
+    axs[plot_idx].spines['right'].set_visible(False)
+    axs[plot_idx].spines['bottom'].set_visible(False)
+    axs[plot_idx].spines['left'].set_visible(False)
+    axs[plot_idx].set_aspect('equal') 
+    axs[plot_idx].set_axisbelow(True)
+    axs[plot_idx].set_ylabel("Im")
+    axs[plot_idx].set_xlabel('Re')
+
+    plt.tight_layout()
+    plt.savefig(f'./data/plots/{idx}.png')
+    plt.close('all')
