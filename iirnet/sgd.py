@@ -12,10 +12,10 @@ class SGDFilterDesign(torch.nn.Module):
     """
     def __init__(self, 
                 n_iters=1000, 
-                lr=1e-4, 
+                lr=3e-4, 
                 schedule_lr=False, 
                 pole_zero=True, 
-                verbose=False
+                verbose=True
             ):
         super(SGDFilterDesign, self).__init__()
         self.n_iters = n_iters
@@ -23,8 +23,6 @@ class SGDFilterDesign(torch.nn.Module):
         self.schedule_lr = schedule_lr
         self.pole_zero = pole_zero
         self.verbose = verbose
-        self.coefs = torch.ones(1,16,6, requires_grad=False)
-        self.coefs.uniform_(0.5, 0.9)
 
         self.magtarget = LogMagTargetFrequencyLoss()
 
