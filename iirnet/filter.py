@@ -364,7 +364,7 @@ def generate_uniform_disk_filter(
     ##a and b are used for the loguniform sampling
     a = min_freq/(0.5 * fs * np.pi) ##MIN CAN'T BE ZERO, CHOOSING 20HZ AS MINIMUM POLE/ZERO FREQUENCY
     b = np.pi 
-    norm = 1.0  ##SHOULD BE HYPERPARAMETER
+    norm = 0.9 ##SHOULD BE HYPERPARAMETER
 
     sos = []
     if min_order==None:
@@ -429,7 +429,7 @@ def generate_uniform_mag_disk_filter(
     ##a and b are used for the loguniform sampling
     a = min_freq/(0.5 * fs * np.pi) ##MIN CAN'T BE ZERO, CHOOSING 20HZ AS MINIMUM POLE/ZERO FREQUENCY
     b = np.pi 
-    norm = 1.0 #- eps #torch.distributions.uniform.Uniform(0.1,1).sample() ##SHOULD BE HYPERPARAMETER
+    norm = 0.9 #
 
     sos = []
     if min_order==None:
