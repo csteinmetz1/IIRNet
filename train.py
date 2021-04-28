@@ -41,9 +41,16 @@ args = parser.parse_args()                          # parse them args
 
 # set the log/checkpoint directory
 args.default_root_dir = os.path.join("lightning_logs", f"{args.filter_method}")
+checkpoint_callback = pl.callbacks.ModelCheckpoint(
+    monitor=None,
+    filename=f"{args.filter_method}" + "-{epoch:02d}-{step}"
+)
 
 # init the trainer and model 
-trainer = pl.Trainer.from_argparse_args(args)
+trainer = pl.Trainer.from_argparse_args(
+    args,
+    callbacks=[checkpoint_callback]
+)
 
 # setup the dataloaders
 train_datasetA = IIRFilterDataset(method="normal_poly",
@@ -143,16 +150,23 @@ val_datasetF = IIRFilterDataset(method="uniform_parametric",
                                num_examples=args.num_val_examples,
                                precompute=args.precompute)
 
-val_dataset = torch.utils.data.ConcatDataset([
-  val_datasetA,
-  val_datasetB, 
-  val_datasetC, 
-  val_datasetD,
-  val_datasetE, 
-  val_datasetF]
-  )
+filter_val_datasets = {
+  'normal_poly': val_datasetA,
+  'normal_biquad': val_datasetB,
+  'uniform_disk': val_datasetC,
+  'uniform_mag_disk': val_datasetD,
+  'char_poly': val_datasetE,
+  'uniform_parametric': val_datasetF,
+  'all' : torch.utils.data.ConcatDataset(
+            [val_datasetA, 
+             val_datasetB,
+             val_datasetC,
+             val_datasetD,
+             val_datasetE,
+             val_datasetF])
+}
 
-val_dataloader = torch.utils.data.DataLoader(val_dataset, 
+val_dataloader = torch.utils.data.DataLoader(filter_val_datasets[args.filter_method], 
                                              shuffle=args.shuffle,
                                              batch_size=args.batch_size,
                                              num_workers=args.num_workers,
