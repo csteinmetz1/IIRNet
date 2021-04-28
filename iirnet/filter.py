@@ -364,7 +364,7 @@ def generate_uniform_disk_filter(
     ##a and b are used for the loguniform sampling
     a = min_freq/(0.5 * fs * np.pi) ##MIN CAN'T BE ZERO, CHOOSING 20HZ AS MINIMUM POLE/ZERO FREQUENCY
     b = np.pi 
-    norm = 1.0 ##SHOULD BE HYPERPARAMETER
+    norm = 1.0  ##SHOULD BE HYPERPARAMETER
 
     sos = []
     if min_order==None:
@@ -376,11 +376,11 @@ def generate_uniform_disk_filter(
     chosen_max = np.max((num_ord,den_ord))
     all_num = np.zeros(chosen_max,dtype=np.cdouble)
     all_den = np.zeros(chosen_max,dtype=np.cdouble)
-    zeros_mags = torch.distributions.uniform.Uniform(0.0,norm).sample(num_ord//2)
-    poles_mags = torch.distributions.uniform.Uniform(0.0,norm).sample(num_ord//2)
+    zeros_mags = torch.distributions.uniform.Uniform(eps,norm).sample(num_ord//2)
+    poles_mags = torch.distributions.uniform.Uniform(eps,norm).sample(num_ord//2)
     if not log:
-        zeros_args = torch.distributions.uniform.Uniform(0.0,np.pi).sample(num_ord//2)
-        poles_args = torch.distributions.uniform.Uniform(0.0,np.pi).sample(num_ord//2)
+        zeros_args = torch.distributions.uniform.Uniform(eps,np.pi).sample(num_ord//2)
+        poles_args = torch.distributions.uniform.Uniform(eps,np.pi).sample(num_ord//2)
     else:
         zeros_args = loguniform.rvs(a,b,size=(num_ord)//2)
         poles_args = loguniform.rvs(a,b,size=(num_ord)//2)
@@ -429,7 +429,7 @@ def generate_uniform_mag_disk_filter(
     ##a and b are used for the loguniform sampling
     a = min_freq/(0.5 * fs * np.pi) ##MIN CAN'T BE ZERO, CHOOSING 20HZ AS MINIMUM POLE/ZERO FREQUENCY
     b = np.pi 
-    norm = torch.distributions.uniform.Uniform(0.0,1).sample() ##SHOULD BE HYPERPARAMETER
+    norm = 1.0 #- eps #torch.distributions.uniform.Uniform(0.1,1).sample() ##SHOULD BE HYPERPARAMETER
 
     sos = []
     if min_order==None:
@@ -441,11 +441,11 @@ def generate_uniform_mag_disk_filter(
     chosen_max = np.max((num_ord,den_ord))
     all_num = np.zeros(chosen_max,dtype=np.cdouble)
     all_den = np.zeros(chosen_max,dtype=np.cdouble)
-    zeros_mags = torch.sqrt(torch.distributions.uniform.Uniform(0.0,norm).sample(num_ord//2))
-    poles_mags = torch.sqrt(torch.distributions.uniform.Uniform(0.0,norm).sample(num_ord//2))
+    zeros_mags = torch.sqrt(torch.distributions.uniform.Uniform(eps,norm).sample(num_ord//2))
+    poles_mags = torch.sqrt(torch.distributions.uniform.Uniform(eps,norm).sample(num_ord//2))
     if not log:
-        zeros_args = torch.distributions.uniform.Uniform(0.0,np.pi).sample(num_ord//2)
-        poles_args = torch.distributions.uniform.Uniform(0.0,np.pi).sample(num_ord//2)
+        zeros_args = torch.distributions.uniform.Uniform(eps,np.pi).sample(num_ord//2)
+        poles_args = torch.distributions.uniform.Uniform(eps,np.pi).sample(num_ord//2)
     else:
         zeros_args = loguniform.rvs(a,b,size=(num_ord)//2)
         poles_args = loguniform.rvs(a,b,size=(num_ord)//2)

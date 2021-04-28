@@ -29,7 +29,7 @@ class IIRNet(pl.LightningModule):
                     prog_bar=True, 
                     logger=True)
         return loss
-
+        
     def validation_step(self, batch, batch_idx):
         mag, phs, real, imag, sos = batch
         pred_sos = self(mag)

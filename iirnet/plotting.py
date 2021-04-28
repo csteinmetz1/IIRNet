@@ -38,7 +38,13 @@ def plot_response_grid(
         mag_idx = idx * 2
         plot_idx = mag_idx + 1
 
-        zeros,poles,k = scipy.signal.sos2zpk(p.squeeze())
+        try:
+            zeros,poles,k = scipy.signal.sos2zpk(p.squeeze())
+        except:
+            zeros = []
+            poles = []
+            k = 0
+
         w_pred, h_pred = signal.sosfreqz(p, worN=num_points, fs=fs)
         mag_pred = 20 * np.log10(np.abs(h_pred.squeeze()) + 1e-8)
 
@@ -156,7 +162,7 @@ def plot_responses(pred_sos, target_dB, filename=None):
     #phs_idx = 1
     plot_idx = 1
 
-    fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(9, 3))
+    fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(6, 3))
 
     zeros,poles,k = scipy.signal.sos2zpk(pred_sos.squeeze())
     w_pred, h_pred = signal.sosfreqz(pred_sos, worN=target_dB.shape[-1], fs=44100)
