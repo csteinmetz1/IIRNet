@@ -230,6 +230,6 @@ def plot_responses(pred_sos, target_dB, filename=None):
 
     plt.tight_layout()
     if filename is not None:
-        plt.savefig(f'./data/plots/{filename}.png')
+        plt.savefig(f"{filename}")
 
     plt.close('all')

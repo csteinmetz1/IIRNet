@@ -24,7 +24,7 @@ eps = 1e-8
 gpu = False
 num_points = 512
 max_eval_order = 32
-examples_per_method = 50
+examples_per_method = 5
 precompute = True
 shuffle = False
 
@@ -82,12 +82,12 @@ val_hrtf_datatset = FIRFilterDataset("data/HRTF/IRC_1059/COMPENSATED/WAV/IRC_105
 
 datasets = {
     "normal_poly"       : val_datasetA,
-    "normal_biquad"     : val_datasetB,
-    "uniform_disk"      : val_datasetC,
-    "uniform_mag_disk"  : val_datasetD,
-    "char_poly"         : val_datasetE,
-    "uniform_parametric": val_datasetF,
-    "guitar_cab"        : val_guitar_cab_datatset,
+    #"normal_biquad"     : val_datasetB,
+    #"uniform_disk"      : val_datasetC,
+    #"uniform_mag_disk"  : val_datasetD,
+    #"char_poly"         : val_datasetE,
+    #"uniform_parametric": val_datasetF,
+    #"guitar_cab"        : val_guitar_cab_datatset,
     "hrtf"              : val_hrtf_datatset
 }
 
@@ -95,24 +95,24 @@ datasets = {
 normal_poly_ckpt        = 'lightning_logs/normal_poly/lightning_logs/version_1/checkpoints/epoch=99-step=78199.ckpt'
 normal_biquad_ckpt      = 'lightning_logs/normal_biquad/lightning_logs/version_0/checkpoints/epoch=70-step=55521.ckpt'
 uniform_disk_ckpt       = 'lightning_logs/uniform_disk/lightning_logs/version_0/checkpoints/epoch=89-step=70379.ckpt'
-uniform_mag_disk_ckpt   = 'lightning_logs/uniform_mag_disk/lightning_logs/version_1/checkpoints/epoch=58-step=46137.ckpt'
+uniform_mag_disk_ckpt   = 'lightning_logs/uniform_mag_disk/lightning_logs/version_8/checkpoints/uniform_mag_disk-epoch=60-step=47701.ckpt'
 char_poly_ckpt          = 'lightning_logs/char_poly/lightning_logs/version_1/checkpoints/epoch=82-step=64905.ckpt'
 uniform_parametric_ckpt = 'lightning_logs/uniform_parametric/lightning_logs/version_1/checkpoints/epoch=66-step=52393.ckpt'
-all_ckpt                = 'lightning_logs/all/lightning_logs/version_2/checkpoints/epoch=84-step=66469.ckpt'
+all_ckpt                = 'lightning_logs/all/lightning_logs/version_6/checkpoints/all-epoch=93-step=73507.ckpt'
 
 # load models from disk
 models = {
-    #"SGD (1)"           : SGDFilterDesign(n_iters=1),
-    #"SGD (10)"          : SGDFilterDesign(n_iters=10),
+    "SGD (1)"           : SGDFilterDesign(n_iters=1),
+    "SGD (10)"          : SGDFilterDesign(n_iters=10),
     #"SGD (100)"         : SGDFilterDesign(n_iters=100),
     #"SGD (1000)"        : SGDFilterDesign(n_iters=1000),
-    "normal_poly"       : MLPModel.load_from_checkpoint(normal_poly_ckpt),
-    "normal_biquad"     : MLPModel.load_from_checkpoint(normal_biquad_ckpt),
-    "uniform_disk"      : MLPModel.load_from_checkpoint(uniform_disk_ckpt),
-    "uniform_mag_disk"  : MLPModel.load_from_checkpoint(uniform_mag_disk_ckpt),
-    "char_poly"         : MLPModel.load_from_checkpoint(char_poly_ckpt),
-    "uniform_parametric": MLPModel.load_from_checkpoint(uniform_parametric_ckpt),
-    "all"               : MLPModel.load_from_checkpoint(all_ckpt),
+    #"normal_poly"       : MLPModel.load_from_checkpoint(normal_poly_ckpt),
+    #"normal_biquad"     : MLPModel.load_from_checkpoint(normal_biquad_ckpt),
+    #"uniform_disk"      : MLPModel.load_from_checkpoint(uniform_disk_ckpt),
+    #"uniform_mag_disk"  : MLPModel.load_from_checkpoint(uniform_mag_disk_ckpt),
+    #"char_poly"         : MLPModel.load_from_checkpoint(char_poly_ckpt),
+    #"uniform_parametric": MLPModel.load_from_checkpoint(uniform_parametric_ckpt),
+    #"all"               : MLPModel.load_from_checkpoint(all_ckpt),
 }
 
 if gpu:
@@ -155,7 +155,7 @@ def evaluate_on_dataset(
         timings.append(elapsed)
 
         if plot:
-            filename = f"{model_name}-{dataset_name}-{idx}"
+            filename = f"./data/plots/{model_name}-{dataset_name}-{idx}.png"
             plot_responses(pred_sos.detach(), target_dB, filename=filename)
 
         sys.stdout.write(f"* {idx+1}/{len(dataset)}: MSE: {np.mean(errors):0.2f} dB  Time: {np.mean(timings)*1e3:0.2f} ms\r")
@@ -185,7 +185,7 @@ for model_name, model in models.items():
             "mean_error" : np.mean(errors),
             "std_error" : np.std(errors),
             "elapsed" : elapsed,
-            "mean_elaped" : np.mean(elapsed),
+            "mean_elapsed" : np.mean(elapsed),
             "std_elapsed" : np.std(elapsed)
         }
         if dataset_name not in ["hrtf", "guitar_cab"]:
@@ -193,8 +193,8 @@ for model_name, model in models.items():
             synthetic_elapsed += elapsed
         
     results[model_name]["all"] = {
-        "mean_synthetic_errors" : np.mean(synthetic_errors),
-        "mean_synthetic_elapsed" : np.mean(synthetic_elapsed)
+        "mean_error" : np.mean(synthetic_errors),
+        "mean_elapsed" : np.mean(synthetic_elapsed)
     }
 
     print(f"""Synthetic MSE: {np.mean(synthetic_errors):0.2f} dB  Time: {np.mean(synthetic_elapsed)*1e3:0.2f} ms""")
