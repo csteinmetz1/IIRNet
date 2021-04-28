@@ -15,7 +15,7 @@ class SGDFilterDesign(torch.nn.Module):
                 lr=1e-4, 
                 schedule_lr=False, 
                 pole_zero=True, 
-                verbose=True
+                verbose=False
             ):
         super(SGDFilterDesign, self).__init__()
         self.n_iters = n_iters
