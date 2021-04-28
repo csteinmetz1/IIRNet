@@ -132,5 +132,6 @@ lightning_logs/
 .vscode
 data/HRTF
 data/plots
+data/KCIRs_16bit
 .DS_Store
 results/
