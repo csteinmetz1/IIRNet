@@ -92,19 +92,19 @@ datasets = {
 }
 
 # model checkpoint paths
-normal_poly_ckpt        = 'lightning_logs/normal_poly/lightning_logs/version_0/checkpoints/epoch=81-step=64123.ckpt'
+normal_poly_ckpt        = 'lightning_logs/normal_poly/lightning_logs/version_1/checkpoints/epoch=99-step=78199.ckpt'
 normal_biquad_ckpt      = 'lightning_logs/normal_biquad/lightning_logs/version_0/checkpoints/epoch=70-step=55521.ckpt'
 uniform_disk_ckpt       = 'lightning_logs/uniform_disk/lightning_logs/version_0/checkpoints/epoch=89-step=70379.ckpt'
-uniform_mag_disk_ckpt   = 'lightning_logs/uniform_mag_disk/lightning_logs/version_0/checkpoints/epoch=28-step=22677.ckpt'
-char_poly_ckpt          = 'lightning_logs/char_poly/lightning_logs/version_0/checkpoints/epoch=46-step=36753.ckpt'
-uniform_parametric_ckpt = 'lightning_logs/normal_poly/lightning_logs/version_0/checkpoints/epoch=81-step=64123.ckpt'
-all_ckpt                = 'lightning_logs/normal_poly/lightning_logs/version_0/checkpoints/epoch=81-step=64123.ckpt'
+uniform_mag_disk_ckpt   = 'lightning_logs/uniform_mag_disk/lightning_logs/version_1/checkpoints/epoch=58-step=46137.ckpt'
+char_poly_ckpt          = 'lightning_logs/char_poly/lightning_logs/version_1/checkpoints/epoch=82-step=64905.ckpt'
+uniform_parametric_ckpt = 'lightning_logs/uniform_parametric/lightning_logs/version_1/checkpoints/epoch=66-step=52393.ckpt'
+all_ckpt                = 'lightning_logs/all/lightning_logs/version_2/checkpoints/epoch=84-step=66469.ckpt'
 
 # load models from disk
 models = {
-    "SGD (1)"           : SGDFilterDesign(n_iters=1),
-    "SGD (10)"          : SGDFilterDesign(n_iters=10),
-    "SGD (100)"         : SGDFilterDesign(n_iters=100),
+    #"SGD (1)"           : SGDFilterDesign(n_iters=1),
+    #"SGD (10)"          : SGDFilterDesign(n_iters=10),
+    #"SGD (100)"         : SGDFilterDesign(n_iters=100),
     #"SGD (1000)"        : SGDFilterDesign(n_iters=1000),
     "normal_poly"       : MLPModel.load_from_checkpoint(normal_poly_ckpt),
     "normal_biquad"     : MLPModel.load_from_checkpoint(normal_biquad_ckpt),
@@ -125,6 +125,8 @@ def evaluate_on_dataset(
                 dataset_name=None, 
                 plot=True
             ):
+
+    pl.seed_everything(12)
 
     errors = []
     timings = []
@@ -156,11 +158,11 @@ def evaluate_on_dataset(
             filename = f"{model_name}-{dataset_name}-{idx}"
             plot_responses(pred_sos.detach(), target_dB, filename=filename)
 
-        sys.stdout.write(f"* {idx+1}/{len(dataset)}: MSE: {np.mean(errors):0.2f} dB  Time: {np.mean(elapsed)*1e3:0.2f} ms\r")
+        sys.stdout.write(f"* {idx+1}/{len(dataset)}: MSE: {np.mean(errors):0.2f} dB  Time: {np.mean(timings)*1e3:0.2f} ms\r")
         sys.stdout.flush()
 
     print()
-    return errors, elapsed
+    return errors, timings
 
 results = defaultdict(dict)
 
@@ -168,7 +170,7 @@ for model_name, model in models.items():
 
     print("-" * 32)
     model.eval()
-    all_errors, all_elapsed = [], []
+    synthetic_errors, synthetic_elapsed = [], []
 
     # evaluate on synthetic datasets
     for dataset_name, dataset in datasets.items():
@@ -186,16 +188,16 @@ for model_name, model in models.items():
             "mean_elaped" : np.mean(elapsed),
             "std_elapsed" : np.std(elapsed)
         }
-        all_errors.append(errors)
-        all_elapsed.append(elapsed)
+        if dataset_name not in ["hrtf", "guitar_cab"]:
+            synthetic_errors += errors
+            synthetic_elapsed += elapsed
         
     results[model_name]["all"] = {
-        "mean_errors" : np.mean(all_errors),
-        "mean_elapsed" : np.mean(all_elapsed)
+        "mean_synthetic_errors" : np.mean(synthetic_errors),
+        "mean_synthetic_elapsed" : np.mean(synthetic_elapsed)
     }
 
-    print(f"""All MSE: {np.mean(all_errors):0.2f} dB  Time: {np.mean(all_elapsed)*1e3:0.2f} ms""")
-    
+    print(f"""Synthetic MSE: {np.mean(synthetic_errors):0.2f} dB  Time: {np.mean(synthetic_elapsed)*1e3:0.2f} ms""")
     print()
 
 with open(f'results/results.pkl', 'wb') as handle:
