@@ -1,3 +1,4 @@
+import sys
 import scipy.linalg
 from scipy import signal as scisiganl
 import numpy as np
@@ -9,7 +10,7 @@ def yulewalk(N, f, m, npt=512):
         N (int): Filter order. 
         f (ndarray): Array of frequency points.
         m (ndarray): Array of desired magnitude response.
-        npt (int): FFT size. 
+        npt (int): FFT size.  must be power of 2.
 
     Returns:
         b (ndarray): Denominator coefficients. 
@@ -19,6 +20,8 @@ def yulewalk(N, f, m, npt=512):
 
     """
 
+    lap = np.floor(npt/25)
+
     num_f = f.shape[0]
     num_m = m.shape[0]
     
@@ -26,25 +29,48 @@ def yulewalk(N, f, m, npt=512):
 
     nbrk = num_f
 
-    lap = np.floor(npt/25)
-
     # Hold the interpolated target response here
     npt = npt + 1
     Ht = np.zeros((1,npt))
 
     # check that frequencies are laid out correctly
-    if not np.all(np.diff(f) >= 0):
+    df = np.diff(f)
+    if not np.all(df >= 0):
         raise ValueError("Yule Walker requires monotonic frequency points.")
 
     # apply linear interpolation if needed to
     # increase the size of the frequency/mag target
-    if num_f != npt:
-       Ht = np.interp(np.linspace(0,1,num=npt), f, m)
+
+    nb = 0
+    Ht[0] = m[0]
+
+    for i in np.arange(nbrk-1):
+        
+        if df[i] == 0:
+            nb = int(nb - lap/2)
+            ne = int(nb + lap)
+        else:
+            ne = int(np.floor(f[i+1]*npt))
+        
+        if nb < 0 and ne > npt:
+            raise ValueError("Signal error.")
+
+        j = np.arange(nb,ne)
+
+        if ne == nb: 
+            inc = 0
+        else: 
+            inc = (j-nb) / (ne-nb)
+
+        Ht[:,nb:ne] = inc * m[i+1] + (1-inc)*m[i]
+
+        nb = ne
 
     # stack negative frequencies
-    Ht = np.concatenate((Ht, Ht[::-1]))
-    n = len(Ht)
-    n2 = np.floor((n+1)/2)
+    Ht = np.concatenate((Ht, Ht[:,npt-2:0:-1]), axis=-1)
+
+    n = Ht.shape[-1]
+    n2 = int(np.floor((n+1)/2))
     nb = N
     nr = 4*N
     nt = np.arange(0,nr,1)
@@ -53,23 +79,28 @@ def yulewalk(N, f, m, npt=512):
     R = np.real(np.fft.ifft(Ht ** 2))
 
     # pick NR correlations
-    R = R[:nr] * (0.54 + 0.46 * np.cos(np.pi * nt / (nr-1))) 
+    R = R[:,:nr] * (0.54 + 0.46 * np.cos(np.pi * nt / (nr-1))) 
 
-    # Form window to be used in the xtacting the right "wing"
+    # Form window to be used in the extracting the right "wing"
     # of two-sided covariance sequence.
-    RWindow = np.concatenate(([1/2], np.ones((int(n2-2))), np.zeros((int(n-n2-1)))))
+    RWindow = np.concatenate(([1/2], np.ones((int(n2-1))), np.zeros((int(n-n2)))))
 
     # compute denominator (we will need to relfect poles still)
     a = denf(R,N) 
 
     # divide first term
-    h = np.concatenate(([R[0]/2], R[1:nr]))
+    h = np.concatenate(([R[:,0]/2], R[:,1:nr]),axis=-1)
 
-    # Compute additive decomposition
+    # compute additive decomposition
     Qh = numf(h, a, N)
+    
+    # compute impulse response
+    _, Ss = 2 * np.real(scipy.signal.freqz(Qh, a, n, whole=True))
+    Ss = Ss.astype(complex) # required to mimic matlab operation
+    hh = np.fft.ifft(np.exp(np.fft.fft(RWindow * np.fft.ifft(np.log(Ss)))))
+    b = np.real(numf(hh[0:nr+1], a, N))
 
-    print(Qh)
-
+    return b, a
 
 def numf(h,a,N):
     """ Compute numerator given impulse-response of B/A and denominator.
@@ -81,7 +112,7 @@ def numf(h,a,N):
 
     """
 
-    nh = h.shape[0]
+    nh = h.shape[-1]
 
     # create impulse
     imp = np.zeros(nh)
@@ -89,15 +120,18 @@ def numf(h,a,N):
 
     # compute impulse response
     b = np.array([1])
-    print(a, b, imp)
     impr = scipy.signal.lfilter(b,a.reshape(-1),imp) 
 
     # compute numerator
     b = np.zeros(N+1)
     b[0] = 1
-    b = h / scipy.linalg.toeplitz(b, impr)
+    b = np.linalg.lstsq(
+            scipy.linalg.toeplitz(b, impr).T, 
+            h.reshape(-1,1), 
+            rcond=None
+        )
 
-    return b
+    return b[0]
 
 def denf(R,N):
     """ Compute denominator from covariances. 
@@ -111,12 +145,14 @@ def denf(R,N):
 
     """ 
 
-    nr = R.shape[0]
-    Rm = scipy.linalg.toeplitz(R[N:nr-1], R[N+1:1:-1])
-    Rhs = - R[N+1:nr]
-    print(Rm.T.shape, Rhs.reshape(1,-1).shape)
-
-    A = np.linalg.lstsq(Rm, Rhs.reshape(-1,1))
+    nr = R.shape[-1]
+    Rm = scipy.linalg.toeplitz(R[:,N:nr-1], R[:,N:0:-1])
+    Rhs = - R[:,N+1:nr]
+    A = np.linalg.lstsq(
+            Rm, 
+            Rhs.reshape(-1,1), 
+            rcond=None
+    )
     a = np.concatenate(([[1]], A[0]))
 
     return a
