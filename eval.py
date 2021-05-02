@@ -1,3 +1,4 @@
+import os
 import sys
 import time
 import torch
@@ -11,20 +12,22 @@ from collections import defaultdict
 from data.hrtf import HRTFDataset
 from data.fir import FIRFilterDataset
 from iirnet.mlp import MLPModel
-from iirnet.sgd import SGDFilterDesign
 from iirnet.data import IIRFilterDataset
 from iirnet.loss import LogMagTargetFrequencyLoss
 from iirnet.plotting import plot_responses
 import iirnet.signal as signal
 
-pl.seed_everything(12)
+from baselines.sgd import SGDFilterDesign
+from baselines.yw import YuleWalkerFilterDesign
+
+pl.seed_everything(32)
 
 # fixed evaluation parameters
 eps = 1e-8
 gpu = False
 num_points = 512
 max_eval_order = 32
-examples_per_method = 5
+examples_per_method = 50
 precompute = True
 shuffle = False
 
@@ -82,37 +85,38 @@ val_hrtf_datatset = FIRFilterDataset("data/HRTF/IRC_1059/COMPENSATED/WAV/IRC_105
 
 datasets = {
     "normal_poly"       : val_datasetA,
-    #"normal_biquad"     : val_datasetB,
-    #"uniform_disk"      : val_datasetC,
-    #"uniform_mag_disk"  : val_datasetD,
-    #"char_poly"         : val_datasetE,
-    #"uniform_parametric": val_datasetF,
-    #"guitar_cab"        : val_guitar_cab_datatset,
+    "normal_biquad"     : val_datasetB,
+    "uniform_disk"      : val_datasetC,
+    "uniform_mag_disk"  : val_datasetD,
+    "char_poly"         : val_datasetE,
+    "uniform_parametric": val_datasetF,
+    "guitar_cab"        : val_guitar_cab_datatset,
     "hrtf"              : val_hrtf_datatset
 }
 
 # model checkpoint paths
-normal_poly_ckpt        = 'lightning_logs/normal_poly/lightning_logs/version_1/checkpoints/epoch=99-step=78199.ckpt'
-normal_biquad_ckpt      = 'lightning_logs/normal_biquad/lightning_logs/version_0/checkpoints/epoch=70-step=55521.ckpt'
-uniform_disk_ckpt       = 'lightning_logs/uniform_disk/lightning_logs/version_0/checkpoints/epoch=89-step=70379.ckpt'
-uniform_mag_disk_ckpt   = 'lightning_logs/uniform_mag_disk/lightning_logs/version_8/checkpoints/uniform_mag_disk-epoch=60-step=47701.ckpt'
-char_poly_ckpt          = 'lightning_logs/char_poly/lightning_logs/version_1/checkpoints/epoch=82-step=64905.ckpt'
-uniform_parametric_ckpt = 'lightning_logs/uniform_parametric/lightning_logs/version_1/checkpoints/epoch=66-step=52393.ckpt'
-all_ckpt                = 'lightning_logs/all/lightning_logs/version_6/checkpoints/all-epoch=93-step=73507.ckpt'
+normal_poly_ckpt        = 'lightning_logs/400/normal_poly/lightning_logs/version_0/checkpoints/last.ckpt'
+normal_biquad_ckpt      = 'lightning_logs/400/normal_biquad/lightning_logs/version_0/checkpoints/last.ckpt'
+uniform_disk_ckpt       = 'lightning_logs/400/uniform_disk/lightning_logs/version_0/checkpoints/last.ckpt'
+uniform_mag_disk_ckpt   = 'lightning_logs/400/uniform_mag_disk/lightning_logs/version_0/checkpoints/last.ckpt'
+char_poly_ckpt          = 'lightning_logs/400/char_poly/lightning_logs/version_0/checkpoints/last.ckpt'
+uniform_parametric_ckpt = 'lightning_logs/400/uniform_parametric/lightning_logs/version_0/checkpoints/uniform_parametric-epoch=133-step=104787.ckpt'
+all_ckpt                = 'lightning_logs/400/all/lightning_logs/version_0/checkpoints/all-epoch=351-step=275263.ckpt'
 
 # load models from disk
 models = {
+    "Yule-Walker"       : YuleWalkerFilterDesign(N=32),
     "SGD (1)"           : SGDFilterDesign(n_iters=1),
     "SGD (10)"          : SGDFilterDesign(n_iters=10),
-    #"SGD (100)"         : SGDFilterDesign(n_iters=100),
-    #"SGD (1000)"        : SGDFilterDesign(n_iters=1000),
-    #"normal_poly"       : MLPModel.load_from_checkpoint(normal_poly_ckpt),
-    #"normal_biquad"     : MLPModel.load_from_checkpoint(normal_biquad_ckpt),
-    #"uniform_disk"      : MLPModel.load_from_checkpoint(uniform_disk_ckpt),
-    #"uniform_mag_disk"  : MLPModel.load_from_checkpoint(uniform_mag_disk_ckpt),
-    #"char_poly"         : MLPModel.load_from_checkpoint(char_poly_ckpt),
-    #"uniform_parametric": MLPModel.load_from_checkpoint(uniform_parametric_ckpt),
-    #"all"               : MLPModel.load_from_checkpoint(all_ckpt),
+    "SGD (100)"         : SGDFilterDesign(n_iters=100),
+    "SGD (1000)"        : SGDFilterDesign(n_iters=1000),
+    "normal_poly"       : MLPModel.load_from_checkpoint(normal_poly_ckpt),
+    "normal_biquad"     : MLPModel.load_from_checkpoint(normal_biquad_ckpt),
+    "uniform_disk"      : MLPModel.load_from_checkpoint(uniform_disk_ckpt),
+    "uniform_mag_disk"  : MLPModel.load_from_checkpoint(uniform_mag_disk_ckpt),
+    "char_poly"         : MLPModel.load_from_checkpoint(char_poly_ckpt),
+    "uniform_parametric": MLPModel.load_from_checkpoint(uniform_parametric_ckpt),
+    "all"               : MLPModel.load_from_checkpoint(all_ckpt),
 }
 
 if gpu:
@@ -126,7 +130,7 @@ def evaluate_on_dataset(
                 plot=True
             ):
 
-    pl.seed_everything(12)
+    pl.seed_everything(32)
 
     errors = []
     timings = []
@@ -150,12 +154,18 @@ def evaluate_on_dataset(
         input_dB = input_dB.cpu().squeeze()
         target_dB = target_dB.cpu().squeeze()
 
+        # zero mean
+        input_dB = input_dB - torch.mean(input_dB)
+
         error = torch.nn.functional.mse_loss(input_dB, target_dB)
         errors.append(error.item())
         timings.append(elapsed)
 
         if plot:
-            filename = f"./data/plots/{model_name}-{dataset_name}-{idx}.png"
+            model_plot_dir = os.path.join("data", "plots", model_name)
+            if not os.path.isdir(model_plot_dir):
+                os.makedirs(model_plot_dir)
+            filename = os.path.join(model_plot_dir, f"{model_name}-{dataset_name}-{idx}.png")
             plot_responses(pred_sos.detach(), target_dB, filename=filename)
 
         sys.stdout.write(f"* {idx+1}/{len(dataset)}: MSE: {np.mean(errors):0.2f} dB  Time: {np.mean(timings)*1e3:0.2f} ms\r")
