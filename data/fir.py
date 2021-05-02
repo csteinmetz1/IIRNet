@@ -5,9 +5,13 @@ import torch
 import torchaudio
 import scipy.signal
 
-def get_ir_magnitude(filename, num_points=512, n_fft=65536, eps=1e-8):
+def get_ir_magnitude(filename=None, x=None, num_points=512, n_fft=65536, eps=1e-8):
     
-    h, sr = torchaudio.load(filename, normalize=True)
+    if filename is not None:
+        h, sr = torchaudio.load(filename, normalize=True)
+    else:
+        h = x
+        x /= x.abs().max()
 
     if h.shape[0] > 1:
         # left channel
@@ -77,7 +81,7 @@ class FIRFilterDataset(torch.utils.data.Dataset):
 
         filename = self.files[idx]
 
-        mag = get_ir_mag(
+        mag = get_ir_magnitude(
                 filename, 
                 num_points=self.num_points, 
                 n_fft=self.n_fft,
