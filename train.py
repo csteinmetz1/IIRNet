@@ -40,9 +40,11 @@ parser = pl.Trainer.add_argparse_args(parser)       # add all the available trai
 args = parser.parse_args()                          # parse them args                      
 
 # set the log/checkpoint directory
-args.default_root_dir = os.path.join("lightning_logs", f"{args.filter_method}")
+args.default_root_dir = os.path.join("lightning_logs", "400", f"{args.filter_method}")
 checkpoint_callback = pl.callbacks.ModelCheckpoint(
+    save_top_k=None, 
     monitor=None,
+    save_last=True,
     filename=f"{args.filter_method}" + "-{epoch:02d}-{step}"
 )
 
