@@ -15,6 +15,7 @@ class IIRFilterDataset(torch.utils.data.Dataset):
     num_points (int): Number of points in the FFT for computing magnitude response. Default: 512
     eps (float): Small number of numerical stability. Default: 1e-8
     num_examples (int): Number of filters per epoch. Default: 10,000.
+    zero_mean (bool): Zero mean the target spectra. Default: True
     standard_norm (bool): Normalize input features by mean and std across dataset. Default: False
     precompute (bool): Precompute `num_examples` filters before training. Default: False
     """
@@ -25,6 +26,7 @@ class IIRFilterDataset(torch.utils.data.Dataset):
                 min_order = None,
                 eps = 1e-8,
                 num_examples = 10000,
+                zero_mean = True,
                 standard_norm = False,
                 precompute = False):
         super(IIRFilterDataset, self).__init__()
@@ -33,6 +35,7 @@ class IIRFilterDataset(torch.utils.data.Dataset):
         self.min_order = min_order
         self.eps = eps
         self.num_examples = num_examples
+        self.zero_mean = zero_mean
         self.standard_norm = standard_norm
         self.precompute = precompute
 
@@ -111,6 +114,9 @@ class IIRFilterDataset(torch.utils.data.Dataset):
         if self.standard_norm:
             mag = (mag - self.stats["mag"]["mean"]) / self.stats["mag"]["std"] 
             phs = (phs - self.stats["phs"]["mean"]) / self.stats["phs"]["std"] 
+
+        if self.zero_mean:
+            mag = mag - np.mean(mag)
 
         # convert to float32 tensor
         mag = torch.tensor(mag.astype('float32'))
