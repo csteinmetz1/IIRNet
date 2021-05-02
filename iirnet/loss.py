@@ -53,11 +53,15 @@ class LogMagFrequencyLoss(torch.nn.Module):
         return mag_loss
 
 class LogMagTargetFrequencyLoss(torch.nn.Module):
-    def __init__(self, priority=False):
+    def __init__(self, priority=False, zero_mean=True):
         super(LogMagTargetFrequencyLoss, self).__init__()
         self.priority = priority
+        self.zero_mean = zero_mean
 
     def forward(self, input_sos, target_mag, eps=1e-8):
+
+        if self.zero_mean:
+            target_mag = target_mag - target_mag.mean(dim=-1, keepdim=True)
 
         if self.priority:
             n_sections = input_sos.shape[1]
