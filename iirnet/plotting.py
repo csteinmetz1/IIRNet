@@ -156,7 +156,7 @@ def plot_compare_response(pred_coef, target_coef, num_points=512, eps=1e-8, fs=4
 
     return image
 
-def plot_responses(pred_sos, target_dB, filename=None):
+def plot_responses(pred_sos, target_dB, filename=None, zero_mean=True):
 
     mag_idx = 0
     #phs_idx = 1
@@ -164,9 +164,18 @@ def plot_responses(pred_sos, target_dB, filename=None):
 
     fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(6, 3))
 
-    zeros,poles,k = scipy.signal.sos2zpk(pred_sos.squeeze())
+    try:
+        zeros,poles,k = scipy.signal.sos2zpk(pred_sos.squeeze())
+    except:
+        zeros = []
+        poles = []
+        k = 0
     w_pred, h_pred = signal.sosfreqz(pred_sos, worN=target_dB.shape[-1], fs=44100)
     mag_pred = 20 * torch.log10(h_pred.abs() + 1e-8) 
+
+    if zero_mean:
+        mag_pred = mag_pred - np.mean(mag_pred.squeeze().numpy())
+        target_dB = target_dB - np.mean(target_dB.squeeze().numpy())
 
     axs[mag_idx].plot(w_pred, target_dB, color='tab:blue', label="target")
     axs[mag_idx].plot(w_pred, mag_pred.squeeze(), color='tab:red', label="pred")
