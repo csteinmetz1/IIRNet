@@ -1,7 +1,10 @@
 import sys
+import torch
 import scipy.linalg
 from scipy import signal as scisiganl
 import numpy as np
+
+from iirnet.loss import LogMagTargetFrequencyLoss
 
 def yulewalk(N, f, m, npt=512):
     """ Design an N-th order IIR filter using Yule-Walker.
@@ -156,3 +159,37 @@ def denf(R,N):
     a = np.concatenate(([[1]], A[0]))
 
     return a
+
+class YuleWalkerFilterDesign(torch.nn.Module):
+    """ Design a filter with modified Yule-Walker Equations.
+
+    """
+    def __init__(self, N=32, verbose=True):
+        super(YuleWalkerFilterDesign, self).__init__()
+        self.N = N
+        self.verbose = verbose
+        self.magtarget = LogMagTargetFrequencyLoss()
+
+    def __call__(self, target_dB):
+
+        f = np.linspace(0,1,num=target_dB.shape[-1])
+
+
+        m = target_dB.clone().squeeze().numpy()
+        m = 10 ** (m/20)
+        m /= np.max(m)
+        npt = m.shape[-1]
+
+        b, a = yulewalk(
+                self.N-1, 
+                f, 
+                m, 
+                npt=npt
+            )
+
+        out_sos = scipy.signal.tf2sos(b.reshape(-1), a.reshape(-1))
+        #out_sos = torch.ones(1,16,6, requires_grad=False)
+        out_sos = torch.tensor(out_sos).unsqueeze(0)
+        #print(out_sos.shape)
+
+        return out_sos

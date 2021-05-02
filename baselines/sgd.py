@@ -6,9 +6,6 @@ from iirnet.loss import LogMagTargetFrequencyLoss
 class SGDFilterDesign(torch.nn.Module):
     """ Design a filter by performing SGD.
 
-    Note: I have tried to use the pole-zero representation, 
-    but this does not appear to converge. 
-
     """
     def __init__(self, 
                 n_iters=1000, 
