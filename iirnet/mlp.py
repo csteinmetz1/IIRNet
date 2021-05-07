@@ -2,7 +2,8 @@ import torch
 import pytorch_lightning as pl
 from argparse import ArgumentParser
 
-from .base import IIRNet
+from iirnet.base import IIRNet
+import iirnet.loss as loss
 
 class MLPModel(IIRNet):
     """ Multi-layer perceptron module. """
@@ -16,6 +17,9 @@ class MLPModel(IIRNet):
                 **kwargs):
         super(MLPModel, self).__init__()
         self.save_hyperparameters()
+
+        self.magfreqzloss = loss.LogMagTargetFrequencyLoss(priority=self.hparams.priority_order)
+        self.magfreqzloss_val = loss.LogMagTargetFrequencyLoss(priority=False)
 
         self.layers = torch.nn.ModuleList()
 
@@ -98,20 +102,10 @@ class MLPModel(IIRNet):
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(self.parameters(), lr=self.hparams.lr)
-        #optimizer = torch.optim.SGD(self.parameters(), lr=self.hparams.lr)
-        #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        #                                                optimizer, 
-        #                                                patience=25, 
-        #                                                factor=0.5,
-        #                                                verbose=True)
-        #lr_scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=1e-5, max_lr=1e-3, verbose=True)
-        #lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        #                                          optimizer, 
-        #                                          self.hparams.max_epochs, 
-        #                                          verbose=True)
+        lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 500, gamma=0.1, last_epoch=-1, verbose=False)
         return {
             'optimizer': optimizer,
-            #'lr_scheduler': None,
+            'lr_scheduler': lr_scheduler,
             'monitor': 'val_loss'
         }
 
@@ -122,10 +116,11 @@ class MLPModel(IIRNet):
         # --- model related ---
         parser.add_argument('--num_points', type=int, default=512)
         parser.add_argument('--num_layers', type=int, default=2)
-        parser.add_argument('--hidden_dim', type=int, default=8192)
+        parser.add_argument('--hidden_dim', type=int, default=512)
         parser.add_argument('--model_order', type=int, default=10)
         parser.add_argument('--normalization', type=str, default="none")
         # --- training related ---
         parser.add_argument('--lr', type=float, default=1e-3)
+        parser.add_argument('--priority_order', action="store_true")
 
         return parser
