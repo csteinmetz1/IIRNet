@@ -4,11 +4,11 @@ CUDA_VISIBLE_DEVICES=0 python train.py \
 --max_train_order 32 \
 --batch_size 128 \
 --num_workers 8 \
---lr 5e-7 \
+--lr 1e-5 \
+--priority_order \
 --gradient_clip_val 1.0 \
---hidden_dim 8192 \
+--hidden_dim 512 \
 --shuffle \
---filter_method char_poly \
---max_epochs 410 \
---num_train_examples 100000 \
---resume_from_checkpoint lightning_logs/char_poly/lightning_logs/version_4/checkpoints/last.ckpt \
+--filter_method all \
+--max_epochs 2000 \
+--num_train_examples 16667 \

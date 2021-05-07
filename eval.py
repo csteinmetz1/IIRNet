@@ -99,23 +99,23 @@ normal_poly_ckpt        = 'lightning_logs/400/normal_poly/lightning_logs/version
 normal_biquad_ckpt      = 'lightning_logs/400/normal_biquad/lightning_logs/version_0/checkpoints/last.ckpt'
 uniform_disk_ckpt       = 'lightning_logs/400/uniform_disk/lightning_logs/version_0/checkpoints/last.ckpt'
 uniform_mag_disk_ckpt   = 'lightning_logs/400/uniform_mag_disk/lightning_logs/version_0/checkpoints/last.ckpt'
-char_poly_ckpt          = 'lightning_logs/400/char_poly/lightning_logs/version_0/checkpoints/last.ckpt'
+char_poly_ckpt          = 'lightning_logs/400/char_poly/lightning_logs/version_4/checkpoints/char_poly-epoch=06-step=5473.ckpt' #'lightning_logs/400/char_poly/lightning_logs/version_0/checkpoints/last.ckpt'
 uniform_parametric_ckpt = 'lightning_logs/400/uniform_parametric/lightning_logs/version_0/checkpoints/uniform_parametric-epoch=133-step=104787.ckpt'
-all_ckpt                = 'lightning_logs/400/all/lightning_logs/version_0/checkpoints/all-epoch=351-step=275263.ckpt'
+all_ckpt                = 'lightning_logs/400/all/lightning_logs/version_5/checkpoints/last.ckpt' #'lightning_logs/400/all/lightning_logs/version_0/checkpoints/all-epoch=351-step=275263.ckpt'
 
 # load models from disk
 models = {
-    "Yule-Walker"       : YuleWalkerFilterDesign(N=32),
-    "SGD (1)"           : SGDFilterDesign(n_iters=1),
-    "SGD (10)"          : SGDFilterDesign(n_iters=10),
-    "SGD (100)"         : SGDFilterDesign(n_iters=100),
-    "SGD (1000)"        : SGDFilterDesign(n_iters=1000),
-    "normal_poly"       : MLPModel.load_from_checkpoint(normal_poly_ckpt),
-    "normal_biquad"     : MLPModel.load_from_checkpoint(normal_biquad_ckpt),
-    "uniform_disk"      : MLPModel.load_from_checkpoint(uniform_disk_ckpt),
-    "uniform_mag_disk"  : MLPModel.load_from_checkpoint(uniform_mag_disk_ckpt),
-    "char_poly"         : MLPModel.load_from_checkpoint(char_poly_ckpt),
-    "uniform_parametric": MLPModel.load_from_checkpoint(uniform_parametric_ckpt),
+    #"Yule-Walker"       : YuleWalkerFilterDesign(N=16),
+    #"SGD (1)"           : SGDFilterDesign(n_iters=1),
+    #"SGD (10)"          : SGDFilterDesign(n_iters=10),
+    #"SGD (100)"         : SGDFilterDesign(n_iters=100),
+    #"SGD (1000)"        : SGDFilterDesign(n_iters=1000),
+    #"normal_poly"       : MLPModel.load_from_checkpoint(normal_poly_ckpt),
+    #"normal_biquad"     : MLPModel.load_from_checkpoint(normal_biquad_ckpt),
+    #"uniform_disk"      : MLPModel.load_from_checkpoint(uniform_disk_ckpt),
+    #"uniform_mag_disk"  : MLPModel.load_from_checkpoint(uniform_mag_disk_ckpt),
+    #"char_poly"         : MLPModel.load_from_checkpoint(char_poly_ckpt),
+    #"uniform_parametric": MLPModel.load_from_checkpoint(uniform_parametric_ckpt),
     "all"               : MLPModel.load_from_checkpoint(all_ckpt),
 }
 

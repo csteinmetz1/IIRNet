@@ -11,7 +11,7 @@ from iirnet.lstm import LSTMModel
 
 torch.backends.cudnn.benchmark = True
 
-pl.seed_everything(12)
+pl.seed_everything(13)
 
 def wif(id): # worker init function
     np.random.seed((id + torch.initial_seed()) % np.iinfo(np.int32).max)
