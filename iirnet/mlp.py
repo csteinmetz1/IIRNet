@@ -22,10 +22,10 @@ class MLPModel(IIRNet):
         super(MLPModel, self).__init__()
         self.save_hyperparameters()
 
-        self.magfreqzloss = loss.LogMagTargetFrequencyLoss(
-            priority=self.hparams.priority_order
-        )
-        self.magfreqzloss_val = loss.LogMagTargetFrequencyLoss(priority=False)
+        # self.magfreqzloss = loss.LogMagTargetFrequencyLoss(
+        #    priority=self.hparams.priority_order
+        # )
+        # self.magfreqzloss_val = loss.LogMagTargetFrequencyLoss(priority=False)
 
         self.layers = torch.nn.ModuleList()
 
@@ -126,7 +126,7 @@ class MLPModel(IIRNet):
             optimizer,
             milestones,
             gamma=0.1,
-            verbose=True,
+            verbose=False,
         )
         return {
             "optimizer": optimizer,
