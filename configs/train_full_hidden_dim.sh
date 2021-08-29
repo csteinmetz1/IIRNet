@@ -8,7 +8,7 @@ do
     --max_train_order 16 \
     --batch_size 128 \
     --num_workers 8 \
-    --lr 5e-7 \
+    --lr 2e-4 \
     --gradient_clip_val 1.0 \
     --hidden_dim $hdim \
     --shuffle \
