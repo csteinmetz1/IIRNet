@@ -68,8 +68,8 @@ class FreqDomainLoss(torch.nn.Module):
         input_mag = signal.mag(input_h)
         target_mag = signal.mag(target_h)
 
-        input_mag_log = self.compute_dB_magnitude(input_mag)
-        target_mag_log = self.compute_dB_magnitude(target_mag)
+        input_mag_log = torch.log(input_mag)
+        target_mag_log = torch.log(target_mag)
 
         mag_log_loss = torch.nn.functional.l1_loss(input_mag_log, target_mag_log)
 

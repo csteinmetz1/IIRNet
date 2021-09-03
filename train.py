@@ -48,6 +48,7 @@ args.default_root_dir = os.path.join(
     "lightning_logs",
     f"{args.max_epochs}",
     f"{args.filter_method}",
+    f"{args.hidden_dim}",
 )
 checkpoint_callback = pl.callbacks.ModelCheckpoint(
     save_top_k=None,

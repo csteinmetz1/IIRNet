@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for hdim in 128 256 512 1024 2048 4096 8192
+for hdim in 64 128 256 512 1024 2048 4096
 do
     CUDA_VISIBLE_DEVICES=0 python train.py \
     --gpus 1 \
@@ -13,6 +13,6 @@ do
     --hidden_dim $hdim \
     --shuffle \
     --filter_method all \
-    --max_epochs 500 \
+    --max_epochs 200 \
     --num_train_examples 100000
 done

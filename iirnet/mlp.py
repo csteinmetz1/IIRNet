@@ -22,25 +22,16 @@ class MLPModel(IIRNet):
         super(MLPModel, self).__init__()
         self.save_hyperparameters()
 
-        # self.magfreqzloss = loss.LogMagTargetFrequencyLoss(
-        #    priority=self.hparams.priority_order
-        # )
-        # self.magfreqzloss_val = loss.LogMagTargetFrequencyLoss(priority=False)
-
         self.layers = torch.nn.ModuleList()
 
         for n in range(self.hparams.num_layers):
             in_features = self.hparams.hidden_dim if n != 0 else self.hparams.num_points
             out_features = self.hparams.hidden_dim
             if n + 1 == self.hparams.num_layers:  # no activation at last layer
-                my_layer = torch.nn.Linear(in_features, out_features)
+                linear_layer = torch.nn.Linear(in_features, out_features)
                 # my_layer.weight.data.fill_(0.0)
-                my_layer.bias.data.uniform_(0.6, 0.9)
-                self.layers.append(
-                    torch.nn.Sequential(
-                        my_layer,
-                    )
-                )
+                # my_layer.bias.data.uniform_(0.6, 0.9)
+                self.layers.append(linear_layer)
             else:
                 self.layers.append(
                     torch.nn.Sequential(
@@ -57,15 +48,7 @@ class MLPModel(IIRNet):
             self.bn = torch.nn.BatchNorm1d(self.hparams.num_points * 2)
 
     def forward(self, mag, phs=None):
-        # x = torch.cat((mag), dim=-1)
         x = mag
-
-        if self.hparams.normalization == "tanh":
-            x = torch.tanh(x)
-        elif self.hparams.normalization == "bn":
-            x = self.bn(x)
-        elif self.hparams.normalization == "mean":
-            x = x - torch.mean(x)  # this likely does not do what we want
 
         for layer in self.layers:
             x = layer(x)
@@ -112,7 +95,6 @@ class MLPModel(IIRNet):
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(self.parameters(), lr=self.hparams.lr)
-        # lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 500, gamma=0.1, last_epoch=-1, verbose=False)
         ms1 = int(self.hparams.max_epochs * 0.8)
         ms2 = int(self.hparams.max_epochs * 0.95)
         milestones = [ms1, ms2]
