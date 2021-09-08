@@ -1,14 +1,14 @@
 CUDA_VISIBLE_DEVICES=0 python train.py \
 --gpus 1 \
---model_order 32 \
---max_train_order 32 \
+--model_order 128 \
+--max_train_order 128 \
 --batch_size 128 \
 --num_workers 8 \
---lr 1e-5 \
---priority_order \
---gradient_clip_val 1.0 \
+--lr 2e-4 \
+--gradient_clip_val 10.0 \
 --hidden_dim 512 \
 --shuffle \
 --filter_method all \
 --max_epochs 2000 \
 --num_train_examples 16667 \
+--track_grad_norm 2 \
