@@ -29,8 +29,7 @@ class MLPModel(IIRNet):
             out_features = self.hparams.hidden_dim
             if n + 1 == self.hparams.num_layers:  # no activation at last layer
                 linear_layer = torch.nn.Linear(in_features, out_features)
-                # my_layer.weight.data.fill_(0.0)
-                # my_layer.bias.data.uniform_(0.6, 0.9)
+                # linear_layer.bias.data.fill_(0.5)
                 self.layers.append(linear_layer)
             else:
                 self.layers.append(
@@ -58,7 +57,7 @@ class MLPModel(IIRNet):
         sos = x.view(-1, n_sections, 6)
 
         # extract gain, poles, and zeros
-        g = sos[:, :, 0]
+        g = sos[:, :, 0] + 1.0
         pole_real = sos[:, :, 1]
         pole_imag = sos[:, :, 2]
         zero_real = sos[:, :, 4]
