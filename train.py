@@ -10,6 +10,7 @@ from iirnet.mlp import MLPModel
 from iirnet.lstm import LSTMModel
 
 torch.backends.cudnn.benchmark = True
+# torch.autograd.set_detect_anomaly(True)
 
 pl.seed_everything(13)
 
@@ -46,14 +47,11 @@ args = parser.parse_args()  # parse them args
 # set the log/checkpoint directory
 args.default_root_dir = os.path.join(
     "lightning_logs",
-    f"{args.max_epochs}",
-    f"{args.filter_method}",
-    f"{args.hidden_dim}",
+    f"epochs={args.max_epochs}_filter-method={args.filter_method}_filter-order={args.model_order}_hidden-dim={args.hidden_dim}",
 )
 checkpoint_callback = pl.callbacks.ModelCheckpoint(
-    save_top_k=None,
-    monitor=None,
-    save_last=True,
+    monitor="val_loss",
+    save_last=False,
     filename=f"{args.filter_method}" + "-{epoch:02d}-{step}",
 )
 
