@@ -61,6 +61,7 @@ class IIRFilterDataset(torch.utils.data.Dataset):
             params = list(repeat((num_points, max_order), times=self.num_examples))
             with multiprocessing.Pool(processes=24) as pool:
                 self.examples = pool.starmap(self.generate_filter, params)
+            print(f"Generated {len(self.examples)} examples.")
 
     def __len__(self):
         return self.num_examples
@@ -75,11 +76,15 @@ class IIRFilterDataset(torch.utils.data.Dataset):
                 self.max_order,
             )
 
+        mag_dB = 20 * np.log10(mag + 1e-8)
+        mag_dB_norm = np.clip(mag_dB, a_min=-128, a_max=128) / 128
+
         # convert to float32 tensor
-        mag = torch.tensor(mag.astype("float32"))
+        mag_dB = torch.tensor(mag_dB.astype("float32"))
+        mag_dB_norm = torch.tensor(mag_dB_norm.astype("float32"))
         phs = torch.tensor(phs.astype("float32"))
         real = torch.tensor(real.astype("float32"))
         imag = torch.tensor(imag.astype("float32"))
         sos = torch.tensor(sos.astype("float32"))
 
-        return mag, phs, real, imag, sos
+        return mag_dB, mag_dB_norm, phs, real, imag, sos

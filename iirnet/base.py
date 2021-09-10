@@ -24,8 +24,8 @@ class IIRNet(pl.LightningModule):
         pass
 
     def training_step(self, batch, batch_idx):
-        mag, phs, real, imag, sos = batch
-        pred_sos = self(mag)
+        mag_dB, mag_dB_norm, phs, real, imag, sos = batch
+        pred_sos = self(mag_dB_norm)
         loss = self.magfreqzloss(pred_sos, sos)
 
         self.log(
@@ -34,16 +34,14 @@ class IIRNet(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        mag, phs, real, imag, sos = batch
-        pred_sos = self(mag)
+        mag_dB, mag_dB_norm, phs, real, imag, sos = batch
+        pred_sos = self(mag_dB_norm)
         loss = self.magfreqzloss_val(pred_sos, sos)
-        # priority_loss = self.magfreqzloss(pred_sos, mag)
 
         self.log("val_loss", loss)
-        # self.log("val_loss/priority", priority_loss)
 
         # move tensors to cpu for logging
-        outputs = {"pred_sos": pred_sos.cpu(), "sos": sos.cpu(), "mag": mag.cpu()}
+        outputs = {"pred_sos": pred_sos.cpu(), "sos": sos.cpu(), "mag_dB": mag_dB.cpu()}
 
         return outputs
 
@@ -52,7 +50,7 @@ class IIRNet(pl.LightningModule):
         random.shuffle(validation_step_outputs)
         pred_sos = torch.split(validation_step_outputs[0]["pred_sos"], 1, dim=0)
         sos = torch.split(validation_step_outputs[0]["sos"], 1, dim=0)
-        mag = torch.split(validation_step_outputs[0]["mag"], 1, dim=0)
+        mag = torch.split(validation_step_outputs[0]["mag_dB"], 1, dim=0)
 
         self.logger.experiment.add_image(
             "mag-grid",

@@ -93,7 +93,7 @@ class FreqDomainLoss(torch.nn.Module):
 
 
 class LogMagTargetFrequencyLoss(torch.nn.Module):
-    def __init__(self, priority=False, use_dB=False, zero_mean=True):
+    def __init__(self, priority=False, use_dB=True, zero_mean=False):
         super(LogMagTargetFrequencyLoss, self).__init__()
         self.priority = priority
         self.use_dB = use_dB

@@ -9,14 +9,6 @@ from scipy.stats import loguniform
 from numpy.random import default_rng
 
 
-def compute_dB_magnitude(mag_lin):
-    mag_dB = 20 * np.log10(mag_lin + 1e-8)
-    mag_dB = np.clip(mag_dB, a_min=-128, a_max=128)
-    mag_dB /= 128  # scale between -1 and 1
-
-    return mag_dB
-
-
 def generate_pass_filter(num_points=512, max_order=2):
     """Generate a random highpass/lowpass filter along with its magnitude and phase response.
 
@@ -46,8 +38,6 @@ def generate_pass_filter(num_points=512, max_order=2):
     phs = np.unwrap(np.angle(h))
     real = np.real(h)
     imag = np.imag(h)
-
-    mag = compute_dB_magnitude(mag)
 
     return mag, phs, real, imag, sos
 
@@ -157,8 +147,6 @@ def generate_parametric_eq(num_points, max_order, f_s=48000):
     real = np.real(h)
     imag = np.imag(h)
 
-    mag = compute_dB_magnitude(mag)
-
     return mag, phs, real, imag, sos
 
 
@@ -180,8 +168,6 @@ def generate_normal_biquad(num_points, max_order, min_order=None, norm=1.0):
     phs = np.unwrap(np.angle(h))
     real = np.real(h)
     imag = np.imag(h)
-
-    mag = compute_dB_magnitude(mag)
 
     return mag, phs, real, imag, sos
 
@@ -300,8 +286,6 @@ def generate_uniform_parametric_eq(num_points, max_order, f_s=48000):
     real = np.real(h)
     imag = np.imag(h)
 
-    mag = compute_dB_magnitude(mag)
-
     return mag, phs, real, imag, sos
 
 
@@ -361,8 +345,6 @@ def generate_characteristic_poly_filter(
     phs = np.unwrap(np.angle(h))
     real = np.real(h)
     imag = np.imag(h)
-
-    mag = compute_dB_magnitude(mag)
 
     out = mag, phs, real, imag, sos
 
@@ -435,8 +417,6 @@ def generate_uniform_disk_filter(
     phs = np.unwrap(np.angle(h))
     real = np.real(h)
     imag = np.imag(h)
-
-    mag = compute_dB_magnitude(mag)
 
     out = mag, phs, real, imag, sos
 
@@ -514,8 +494,6 @@ def generate_uniform_mag_disk_filter(
     real = np.real(h)
     imag = np.imag(h)
 
-    mag = compute_dB_magnitude(mag)
-
     out = mag, phs, real, imag, sos
 
     return out
@@ -554,8 +532,6 @@ def generate_gaussian_peaks(
     real = np.zeros(num_points)
     imag = np.zeros(num_points)
     sos = np.tile(np.asarray([1.0, 0, 0, 1.0, 0, 0]), ((max_order + 1) // 2, 1))
-
-    mag = compute_dB_magnitude(mag)
 
     out = mag, phs, real, imag, sos
 
@@ -609,8 +585,6 @@ def generate_normal_poly_filter(
     phs = np.unwrap(np.angle(h))
     real = np.real(h)
     imag = np.imag(h)
-
-    mag = compute_dB_magnitude(mag)
 
     out = mag, phs, real, imag, sos
 
