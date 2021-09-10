@@ -73,6 +73,7 @@ def freqz_fft(
     fs=2 * np.pi,
     log=False,
     include_nyquist=False,
+    eps=1e-8,
 ):
 
     lastpoint = 2 * np.pi if whole else np.pi
@@ -83,7 +84,7 @@ def freqz_fft(
 
     w = w * fs / (2 * np.pi)
 
-    h = B / A
+    h = (B / (A + eps)) + eps
 
     return w, h
 
@@ -125,7 +126,7 @@ def sosfreqz(sos, worN=512, whole=False, fs=2 * np.pi, log=False, fast=False):
             # remove batch elements that are NaN
             row = torch.nan_to_num(row)
             row = row.reshape(-1, 6)  # shape: (batch_dim, 6)
-            w, rowh = freqz(
+            w, rowh = freqz_fft(
                 row[:, :3], row[:, 3:], worN=worN, whole=whole, fs=fs, log=log
             )
             h *= rowh
