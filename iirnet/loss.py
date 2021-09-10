@@ -58,12 +58,16 @@ class FreqDomainLoss(torch.nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, input, target, eps=1e-8):
-        bs = input.size(0)
-        loss = 0
+    def forward(
+        self,
+        input,
+        target,
+        eps=1e-8,
+        error="l2",
+    ):
 
-        w, input_h = signal.sosfreqz(input, log=False)
-        w, target_h = signal.sosfreqz(target, log=False)
+        _, input_h = signal.sosfreqz(input, log=False)
+        _, target_h = signal.sosfreqz(target, log=False)
 
         input_mag = signal.mag(input_h)
         target_mag = signal.mag(target_h)
@@ -71,7 +75,12 @@ class FreqDomainLoss(torch.nn.Module):
         input_mag_log = torch.log(input_mag)
         target_mag_log = torch.log(target_mag)
 
-        mag_log_loss = torch.nn.functional.l1_loss(input_mag_log, target_mag_log)
+        if error == "l1":
+            mag_log_loss = torch.nn.functional.l1_loss(input_mag_log, target_mag_log)
+        elif error == "l2":
+            mag_log_loss = torch.nn.functional.mse_loss(input_mag_log, target_mag_log)
+        else:
+            raise RuntimeError(f"Invalid `error`: {error}.")
 
         return mag_log_loss
 
