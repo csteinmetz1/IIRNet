@@ -19,8 +19,8 @@ do
     --hidden_dim 1024 \
     --shuffle \
     --filter_method "$filter_method" \
-    --max_epochs 10 \
+    --max_epochs 500 \
     --num_train_examples "$examples" \
     --track_grad_norm 2 \
-    --experiment_name filter_method
+    --experiment_name filter_method & 
 done

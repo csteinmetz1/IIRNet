@@ -14,7 +14,7 @@ do
     --hidden_dim $hdim \
     --shuffle \
     --filter_method all \
-    --max_epochs 200 \
+    --max_epochs 500 \
     --num_train_examples 8333 \
     --track_grad_norm 2 \
     --experiment_name hidden_dim
