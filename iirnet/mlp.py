@@ -128,5 +128,6 @@ class MLPModel(IIRNet):
         # --- training related ---
         parser.add_argument("--lr", type=float, default=1e-3)
         parser.add_argument("--priority_order", action="store_true")
+        parser.add_argument("--experiment_name", type=str, default="experiment")
 
         return parser
