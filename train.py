@@ -46,7 +46,8 @@ args = parser.parse_args()  # parse them args
 
 # set the log/checkpoint directory
 args.default_root_dir = os.path.join(
-    "lightning_logs",
+    "logs",
+    f"{args.experiment_name}",
     f"epochs={args.max_epochs}_filter-method={args.filter_method}_filter-order={args.model_order}_hidden-dim={args.hidden_dim}",
 )
 checkpoint_callback = pl.callbacks.ModelCheckpoint(
