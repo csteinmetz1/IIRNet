@@ -135,3 +135,4 @@ data/plots
 data/KCIRs_16bit
 .DS_Store
 results/
+logs/
