@@ -85,6 +85,7 @@ filter_datasets = {
 for filter_method, filter_dataset in filter_datasets.items():
 
     ranges = []
+    means = []
     train_dataloader = torch.utils.data.DataLoader(
         filter_dataset,
         shuffle=False,
@@ -99,8 +100,11 @@ for filter_method, filter_dataset in filter_datasets.items():
         # print(f"{filter_method}: {mag.min()} {mag.max()}")
         ranges.append(mag.min())
         ranges.append(mag.max())
+        means.append(mag.mean())
 
         if mag.isnan().any():
             print(f"{filter_method}: NaN")
 
-    print(f"{filter_method}: {np.min(ranges)} {np.max(ranges)}")
+    print(
+        f"{filter_method} |  min: {np.min(ranges):0.3f}  max: {np.max(ranges):0.3f}  mean: {np.mean(means)}"
+    )
