@@ -5,8 +5,9 @@ import torch
 import torchaudio
 import scipy.signal
 
+
 def get_ir_magnitude(filename=None, x=None, num_points=512, n_fft=65536, eps=1e-8):
-    
+
     if filename is not None:
         h, sr = torchaudio.load(filename, normalize=True)
     else:
@@ -15,12 +16,12 @@ def get_ir_magnitude(filename=None, x=None, num_points=512, n_fft=65536, eps=1e-
 
     if h.shape[0] > 1:
         # left channel
-        h = h[0,:]
+        h = h[0, :]
 
     # zero pad or crop
     if h.shape[-1] < n_fft:
-        padsize = (n_fft - h.shape[-1])//2
-        h = torch.nn.functional.pad(h, (padsize,padsize))
+        padsize = (n_fft - h.shape[-1]) // 2
+        h = torch.nn.functional.pad(h, (padsize, padsize))
     else:
         h = h[:n_fft]
 
@@ -33,10 +34,9 @@ def get_ir_magnitude(filename=None, x=None, num_points=512, n_fft=65536, eps=1e-
     # compute dB magnitude
     mag = 20 * torch.log10(H.abs() + eps)
 
-    mag = torch.nn.functional.interpolate(
-        mag.view(1,1,-1), 
-        size=num_points+1
-    ).view(-1)
+    mag = torch.nn.functional.interpolate(mag.view(1, 1, -1), size=num_points + 1).view(
+        -1
+    )
 
     # omit nyquist bin
     mag = mag[:num_points]
@@ -45,32 +45,21 @@ def get_ir_magnitude(filename=None, x=None, num_points=512, n_fft=65536, eps=1e-
     mag = scipy.signal.savgol_filter(mag.numpy(), 41, 2)
     mag = torch.tensor(mag)
 
-    # zero mean
-    mag = mag - torch.mean(mag)
-
     return mag
 
+
 class FIRFilterDataset(torch.utils.data.Dataset):
-    """ Dataset class to load FIR filters. 
-    
-    """
-    def __init__(self, 
-            data_dir,
-            num_points = 512,
-            n_fft = 65536,
-            eps = 1e-8
-        ):
+    """Dataset class to load FIR filters."""
+
+    def __init__(self, data_dir, num_points=512, n_fft=65536, eps=1e-8):
         super(FIRFilterDataset, self).__init__()
 
         self.num_points = num_points
         self.n_fft = n_fft
         self.eps = eps
 
-        # get a list of all files 
-        self.files = glob.glob(
-            os.path.join(data_dir, "*.wav"), 
-            recursive=False
-        )
+        # get a list of all files
+        self.files = glob.glob(os.path.join(data_dir, "*.wav"), recursive=False)
 
         print(f"Located {len(self.files)} IRs.")
 
@@ -81,11 +70,13 @@ class FIRFilterDataset(torch.utils.data.Dataset):
 
         filename = self.files[idx]
 
-        mag = get_ir_magnitude(
-                filename, 
-                num_points=self.num_points, 
-                n_fft=self.n_fft,
-                eps=self.eps
-            )
+        mag_dB = get_ir_magnitude(
+            filename,
+            num_points=self.num_points,
+            n_fft=self.n_fft,
+            eps=self.eps,
+        )
 
-        return mag, None, None, None, None
+        mag_dB_norm = mag_dB.clamp(-128, 128) / 128
+
+        return mag_dB, mag_dB_norm, None, None, None, None
