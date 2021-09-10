@@ -370,7 +370,13 @@ def generate_characteristic_poly_filter(
 
 
 def generate_uniform_disk_filter(
-    num_points, max_order, min_order=None, eps=1e-8, min_freq=20.0, log=False, fs=44100
+    num_points,
+    max_order,
+    min_order=None,
+    eps=1e-8,
+    min_freq=20.0,
+    log=False,
+    fs=44100,
 ):
 
     rng = default_rng()
@@ -438,7 +444,13 @@ def generate_uniform_disk_filter(
 
 
 def generate_uniform_mag_disk_filter(
-    num_points, max_order, min_order=None, eps=1e-8, min_freq=20.0, log=False, fs=44100
+    num_points,
+    max_order,
+    min_order=None,
+    eps=1e-8,
+    min_freq=20.0,
+    log=False,
+    fs=44100,
 ):
 
     rng = default_rng()
@@ -509,7 +521,11 @@ def generate_uniform_mag_disk_filter(
     return out
 
 
-def generate_gaussian_peaks(num_points, max_order, min_order=None):
+def generate_gaussian_peaks(
+    num_points,
+    max_order,
+    min_order=None,
+):
 
     max_peaks = max_order
     mag = np.zeros(num_points)
@@ -546,7 +562,12 @@ def generate_gaussian_peaks(num_points, max_order, min_order=None):
     return out
 
 
-def generate_normal_poly_filter(num_points, max_order, min_order=None, eps=1e-8):
+def generate_normal_poly_filter(
+    num_points,
+    max_order,
+    min_order=None,
+    eps=1e-8,
+):
     rng = default_rng()
     sos = []
     if min_order == None:
