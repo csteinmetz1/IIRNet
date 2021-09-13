@@ -10,10 +10,10 @@ class SGDFilterDesign(torch.nn.Module):
     def __init__(
         self,
         n_iters=1000,
-        lr=1e-5,
+        lr=2e-5,
         schedule_lr=False,
         pole_zero=True,
-        verbose=False,
+        verbose=True,
         order=16,
     ):
         super(SGDFilterDesign, self).__init__()
