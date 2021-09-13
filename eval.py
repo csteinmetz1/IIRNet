@@ -21,6 +21,14 @@ from baselines.sgd import SGDFilterDesign
 from baselines.yw import YuleWalkerFilterDesign
 
 
+def count_parameters(model):
+    if len(list(model.parameters())) > 0:
+        params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    else:
+        params = 0
+    return params
+
+
 def evaluate_on_dataset(
     model: pl.LightningModule,
     dataset: torch.utils.data.Dataset,
@@ -30,14 +38,18 @@ def evaluate_on_dataset(
     eps: float = 1e-8,
     gpu: bool = False,
     examples: int = 100,
+    seed: int = 42,
 ):
 
-    pl.seed_everything(32)
+    # pl.seed_everything(seed)
 
     errors = []
     timings = []
 
-    runs = min(examples, len(dataset))
+    if dataset_name != "all":
+        runs = min(examples, len(dataset))
+    else:
+        runs = examples
 
     for idx in range(runs):
 
@@ -56,7 +68,7 @@ def evaluate_on_dataset(
         # predict filter coeffieicnts (do timings here)
         tic = time.perf_counter()
         with torch.no_grad():
-            if model_name in ["Yule-Walker", "SGD"]:
+            if model_name in ["Yule-Walker", "SGD (1000)"]:
                 pred_sos = model(mag_dB.view(1, 1, -1))
             else:
                 pred_sos = model(mag_dB_norm.view(1, 1, -1))
@@ -67,7 +79,11 @@ def evaluate_on_dataset(
         _, pred_dB = signal.sosfreqz(pred_sos.squeeze(), worN=mag_dB.shape[-1])
         pred_dB = 20 * torch.log10(signal.mag(pred_dB) + eps)
 
-        if dataset_name in ["guitar_cab", "hrtf"]:
+        if dataset_name in ["guitar_cab", "hrtf"] or model_name in [
+            "Yule-Walker",
+            "SGD (1000)",
+        ]:
+            print("use oriignal dB")
             target_dB = mag_dB.squeeze().to(pred_dB.device)
         else:  # use SOS
             _, target_dB = signal.sosfreqz(sos.squeeze(), worN=mag_dB.shape[-1])
@@ -90,12 +106,12 @@ def evaluate_on_dataset(
                 filename=filename,
             )
 
-        sys.stdout.write(
-            f"* {idx+1}/{len(dataset)}: MSE: {np.mean(errors):0.2f} dB  Time: {np.mean(timings)*1e3:0.2f} ms\r"
-        )
-        sys.stdout.flush()
+        # sys.stdout.write(
+        #    f"* {idx+1}/{len(dataset)}: MSE: {np.mean(errors):0.2f} dB  Time: {np.mean(timings)*1e3:0.2f} ms\r"
+        # )
+        # sys.stdout.flush()
 
-    print()
+    # print()
     return errors, timings
 
 
@@ -126,6 +142,12 @@ if __name__ == "__main__":
         "--seed",
         help="Dataset generation seed.",
         default=42,
+        type=int,
+    )
+    parser.add_argument(
+        "--examples",
+        help="Number of examples for each filter method.",
+        default=1000,
         type=int,
     )
     parser.add_argument(
@@ -169,7 +191,7 @@ if __name__ == "__main__":
     # fixed evaluation parameters
     num_points = 512
     max_eval_order = 16
-    examples_per_method = 100
+    examples_per_method = args.examples
     precompute = True
     shuffle = False
 
@@ -266,22 +288,10 @@ if __name__ == "__main__":
     if args.yw:
         models["Yule-Walker"] = YuleWalkerFilterDesign(N=args.filter_order)
     if args.sgd:
-        models["SGD (1)"] = SGDFilterDesign(
-            n_iters=1,
-            order=args.filter_order,
-        ).to("cuda")
-        models["SGD (10)"] = SGDFilterDesign(
-            n_iters=10,
-            order=args.filter_order,
-        ).to("cuda")
-        models["SGD (100)"] = SGDFilterDesign(
-            n_iters=100,
-            order=args.filter_order,
-        ).to("cuda")
-        models["SGD (1000)"] = SGDFilterDesign(
-            n_iters=1000,
-            order=args.filter_order,
-        ).to("cuda")
+        # models["SGD (1)"] = SGDFilterDesign(n_iters=1, order=args.filter_order)
+        # models["SGD (10)"] = SGDFilterDesign(n_iters=10, order=args.filter_order)
+        # models["SGD (100)"] = SGDFilterDesign(n_iters=100, order=args.filter_order)
+        models["SGD (1000)"] = SGDFilterDesign(n_iters=200, order=args.filter_order)
 
     # get all models from the experiment
     model_dirs = glob.glob(os.path.join(args.experiment_dir, "*"))
@@ -318,9 +328,12 @@ if __name__ == "__main__":
         model.eval()
         synthetic_errors, synthetic_elapsed = [], []
 
+        print(
+            f"Evaluating {model_name} model  {count_parameters(model)/1e6:0.2f} M parameters"
+        )
         # evaluate on synthetic datasets
         for dataset_name, dataset in datasets.items():
-            print(f"Evaluating {model_name} model on {dataset_name} dataset...")
+            sys.stdout.write(f"{dataset_name} dataset ")
             errors, elapsed = evaluate_on_dataset(
                 model,
                 dataset,
@@ -329,6 +342,7 @@ if __name__ == "__main__":
                 gpu=map_loc,
                 examples=examples_per_method,
                 plot=args.plot,
+                seed=args.seed,
             )
             results[model_name][dataset_name] = {
                 "errors": errors,
@@ -338,6 +352,7 @@ if __name__ == "__main__":
                 "mean_elapsed": np.mean(elapsed),
                 "std_elapsed": np.std(elapsed),
             }
+            sys.stdout.write(f"{np.mean(errors):0.2f} \n")
             if dataset_name not in ["hrtf", "guitar_cab"]:
                 synthetic_errors += errors
                 synthetic_elapsed += elapsed
@@ -347,10 +362,10 @@ if __name__ == "__main__":
             "mean_elapsed": np.mean(synthetic_elapsed),
         }
 
-        print(
-            f"""MSE: {np.mean(synthetic_errors):0.2f} dB  Time: {np.mean(synthetic_elapsed)*1e3:0.2f} ms"""
-        )
-        print()
+        # print(
+        #    f"""MSE: {np.mean(synthetic_errors):0.2f} dB  Time: {np.mean(synthetic_elapsed)*1e3:0.2f} ms"""
+        # )
+        print(f"Time: {np.mean(synthetic_elapsed)*1e3:0.2f} ms")
 
-    with open(f"results/results.pkl", "wb") as handle:
+    with open(f"results/results_{experiment_name}.pkl", "wb") as handle:
         pickle.dump(results, handle, protocol=pickle.HIGHEST_PROTOCOL)
