@@ -84,13 +84,6 @@ class FreqDomainLoss(torch.nn.Module):
 
         return mag_log_loss
 
-    @staticmethod
-    def compute_dB_magnitude(mag, eps=1e-16):
-        mag_dB = 20 * torch.log10(mag + eps)
-        mag_dB = torch.clamp(mag_dB, -128, 128)
-        mag_dB /= 128.0  # scale between -1 and 1
-        return mag_dB
-
 
 class LogMagTargetFrequencyLoss(torch.nn.Module):
     def __init__(self, priority=False, use_dB=True, zero_mean=False):
@@ -101,29 +94,10 @@ class LogMagTargetFrequencyLoss(torch.nn.Module):
 
     def forward(self, input_sos, target_mag, eps=1e-8):
 
-        if self.zero_mean:
-            target_mag = target_mag - target_mag.mean(dim=-1, keepdim=True)
+        w, input_h = signal.sosfreqz(input_sos, worN=target_mag.shape[-1], log=False)
+        input_mag = 20 * torch.log10(signal.mag(input_h) + eps).float()
 
-        if self.priority:
-            n_sections = input_sos.shape[1]
-            mag_loss = 0
-            # now compute error with each group of biquads
-            for n in np.arange(n_sections, step=2):
-                sos = input_sos[:, 0 : n + 2, :]
-                w, input_h = signal.sosfreqz(sos, worN=target_mag.shape[-1], log=False)
-                input_mag = 20 * torch.log10(signal.mag(input_h) + eps).float()
-                mag_loss += torch.nn.functional.mse_loss(input_mag, target_mag)
-        else:
-            w, input_h = signal.sosfreqz(
-                input_sos, worN=target_mag.shape[-1], log=False
-            )
-            if self.use_dB:
-                input_mag = 20 * torch.log10(signal.mag(input_h) + eps).float()
-            else:
-                input_mag_log = torch.log(signal.mag(input_h) + eps).float()
-                input_mag_lin = signal.mag(input_h).float()
-
-            mag_loss = torch.nn.functional.mse_loss(input_mag, target_mag)
+        mag_loss = torch.nn.functional.mse_loss(input_mag, target_mag)
 
         return mag_loss
 
