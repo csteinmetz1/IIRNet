@@ -57,7 +57,7 @@ class MLPModel(IIRNet):
         sos = x.view(-1, n_sections, 6)
 
         # extract gain, poles, and zeros
-        g = sos[:, :, 0] + 1.0
+        g = (sos[:, :, 0] + 1.0).clamp(1e-8)
         pole_real = sos[:, :, 1]
         pole_imag = sos[:, :, 2]
         zero_real = sos[:, :, 4]
@@ -65,11 +65,13 @@ class MLPModel(IIRNet):
 
         # ensure stability
         pole = torch.complex(pole_real, pole_imag)
-        pole = pole * torch.tanh(pole.abs()) / pole.abs()
+        # pole = 0.999999 * pole * torch.tanh(pole.abs()) / (pole.abs())
+        pole = pole * torch.tanh(pole.abs()) / (pole.abs())
 
         # ensure zeros inside unit circle
         zero = torch.complex(zero_real, zero_imag)
-        zero = zero * torch.tanh(zero.abs()) / zero.abs()
+        # zero = 0.999999 * zero * torch.tanh(zero.abs()) / (zero.abs())
+        zero = zero * torch.tanh(zero.abs()) / (zero.abs())
 
         # Fix filter gain to be 1
         # b0 = torch.ones(g.shape, device=g.device)
