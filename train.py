@@ -8,11 +8,10 @@ from iirnet.data import IIRFilterDataset
 from iirnet.base import IIRNet
 from iirnet.mlp import MLPModel
 from iirnet.lstm import LSTMModel
+from iirnet.callbacks import LogZPKCallback, LogTransferFnPlots
 
 torch.backends.cudnn.benchmark = True
 # torch.autograd.set_detect_anomaly(True)
-
-pl.seed_everything(13)
 
 
 def wif(id):  # worker init function
@@ -30,6 +29,7 @@ parser.add_argument("--num_workers", type=int, default=0)
 parser.add_argument("--model_name", type=str, default="mlp", help="mlp or lstm")
 parser.add_argument("--num_train_examples", type=int, default=100000)
 parser.add_argument("--num_val_examples", type=int, default=1000)
+parser.add_argument("--seed", type=int, default=14)
 
 temp_args, _ = parser.parse_known_args()
 
@@ -64,8 +64,12 @@ trainer = pl.Trainer.from_argparse_args(
     callbacks=[
         checkpoint_callback,
         learning_rate_callback,
+        LogZPKCallback(),
+        LogTransferFnPlots(),
     ],
 )
+
+pl.seed_everything(args.seed)
 
 # setup the dataloaders
 train_datasetA = IIRFilterDataset(
@@ -219,7 +223,7 @@ val_dataloader = torch.utils.data.DataLoader(
     batch_size=args.batch_size,
     num_workers=args.num_workers,
     worker_init_fn=wif,
-    pin_memory=True,
+    pin_memory=False,
 )
 
 # build the model

@@ -14,9 +14,6 @@ class IIRNet(pl.LightningModule):
     def __init__(self, **kwargs):
         super(IIRNet, self).__init__()
 
-        # self.magfreqzloss = loss.LogMagTargetFrequencyLoss(priority=False)
-        # self.magfreqzloss_val = loss.LogMagTargetFrequencyLoss(priority=False)
-
         self.magfreqzloss = loss.FreqDomainLoss()
         self.magfreqzloss_val = loss.FreqDomainLoss()
 
@@ -25,38 +22,37 @@ class IIRNet(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         mag_dB, mag_dB_norm, phs, real, imag, sos = batch
-        pred_sos = self(mag_dB_norm)
+        pred_sos, _ = self(mag_dB_norm)
         loss = self.magfreqzloss(pred_sos, sos)
 
         self.log(
-            "train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True
+            "train_loss",
+            loss,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+            logger=True,
         )
         return loss
 
     def validation_step(self, batch, batch_idx):
         mag_dB, mag_dB_norm, phs, real, imag, sos = batch
-        pred_sos = self(mag_dB_norm)
+        pred_sos, zpk = self(mag_dB_norm)
         loss = self.magfreqzloss_val(pred_sos, sos)
 
-        self.log("val_loss", loss)
+        self.log("val_loss", loss, on_step=False)
 
         # move tensors to cpu for logging
-        outputs = {"pred_sos": pred_sos.cpu(), "sos": sos.cpu(), "mag_dB": mag_dB.cpu()}
+        outputs = {
+            "pred_sos": pred_sos.cpu(),
+            "sos": sos.cpu(),
+            "mag_dB": mag_dB.cpu(),
+            "z": zpk[0].cpu(),
+            "p": zpk[1].cpu(),
+            "k": zpk[2].cpu(),
+        }
 
         return outputs
-
-    def validation_epoch_end(self, validation_step_outputs):
-
-        random.shuffle(validation_step_outputs)
-        pred_sos = torch.split(validation_step_outputs[0]["pred_sos"], 1, dim=0)
-        sos = torch.split(validation_step_outputs[0]["sos"], 1, dim=0)
-        mag = torch.split(validation_step_outputs[0]["mag_dB"], 1, dim=0)
-
-        self.logger.experiment.add_image(
-            "mag-grid",
-            plotting.plot_response_grid(pred_sos, target_coefs=sos),
-            self.global_step,
-        )
 
     # add any model hyperparameters here
     @staticmethod

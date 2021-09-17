@@ -17,6 +17,7 @@ class MLPModel(IIRNet):
         max_order=2,
         normalization="none",
         lr=3e-4,
+        eps=1e-8,
         **kwargs,
     ):
         super(MLPModel, self).__init__()
@@ -56,8 +57,13 @@ class MLPModel(IIRNet):
         n_sections = self.hparams.model_order // 2
         sos = x.view(-1, n_sections, 6)
 
-        # extract gain, poles, and zeros
-        g = (sos[:, :, 0] + 1.0).clamp(1e-8)
+        # extract gains, offset from 1
+        g = 10 * torch.sigmoid(sos[:, :, 0])
+
+        # all gains are held at 1 except first
+        g[:, 1:] = 1.0
+
+        # extract poles, and zeros
         pole_real = sos[:, :, 1]
         pole_imag = sos[:, :, 2]
         zero_real = sos[:, :, 4]
@@ -65,13 +71,21 @@ class MLPModel(IIRNet):
 
         # ensure stability
         pole = torch.complex(pole_real, pole_imag)
-        # pole = 0.999999 * pole * torch.tanh(pole.abs()) / (pole.abs())
-        pole = pole * torch.tanh(pole.abs()) / (pole.abs())
+        pole = (
+            (1 - self.hparams.eps)
+            * pole
+            * torch.tanh(pole.abs())
+            / (pole.abs().clamp(self.hparams.eps))
+        )
 
         # ensure zeros inside unit circle
         zero = torch.complex(zero_real, zero_imag)
-        # zero = 0.999999 * zero * torch.tanh(zero.abs()) / (zero.abs())
-        zero = zero * torch.tanh(zero.abs()) / (zero.abs())
+        zero = (
+            (1 - self.hparams.eps)
+            * zero
+            * torch.tanh(zero.abs())
+            / (zero.abs().clamp(self.hparams.eps))
+        )
 
         # Fix filter gain to be 1
         # b0 = torch.ones(g.shape, device=g.device)
@@ -92,7 +106,10 @@ class MLPModel(IIRNet):
         # reconstruct SOS
         out_sos = torch.stack([b0, b1, b2, a0, a1, a2], dim=-1)
 
-        return out_sos
+        # store zeros poles and gains
+        zpk = (zero, pole, g)
+
+        return out_sos, zpk
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(self.parameters(), lr=self.hparams.lr)
@@ -129,6 +146,7 @@ class MLPModel(IIRNet):
         parser.add_argument("--normalization", type=str, default="none")
         # --- training related ---
         parser.add_argument("--lr", type=float, default=1e-3)
+        parser.add_argument("--eps", type=float, default=1e-8)
         parser.add_argument("--priority_order", action="store_true")
         parser.add_argument("--experiment_name", type=str, default="experiment")
 

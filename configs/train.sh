@@ -1,15 +1,16 @@
 CUDA_VISIBLE_DEVICES=0 python train.py \
 --gpus 1 \
---model_order 64 \
---max_train_order 64 \
+--model_order 16 \
+--max_train_order 16 \
 --batch_size 128 \
---num_workers 12 \
---lr 1e-7 \
+--num_workers 8 \
+--lr 1e-4 \
 --gradient_clip_val 0.9 \
+--gradient_clip_algorithm norm \
 --hidden_dim 1024 \
 --shuffle \
---filter_method all \
+--filter_method uniform_parametric \
 --max_epochs 500 \
---num_train_examples 8333 \
+--num_train_examples 50000 \
 --track_grad_norm 2 \
---experiment_name filter_order
+--experiment_name filter_method
