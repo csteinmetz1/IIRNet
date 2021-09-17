@@ -15,7 +15,7 @@ class IIRNet(pl.LightningModule):
         super(IIRNet, self).__init__()
 
         self.magfreqzloss = loss.FreqDomainLoss()
-        self.magfreqzloss_val = loss.FreqDomainLoss()
+        self.dbmagfreqzloss = loss.LogMagFrequencyLoss()
 
     def forward(self, x):
         pass
@@ -38,9 +38,11 @@ class IIRNet(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         mag_dB, mag_dB_norm, phs, real, imag, sos = batch
         pred_sos, zpk = self(mag_dB_norm)
-        loss = self.magfreqzloss_val(pred_sos, sos)
+        loss = self.magfreqzloss(pred_sos, sos)
+        dB_MSE = self.dbmagfreqzloss(pred_sos, sos)
 
         self.log("val_loss", loss, on_step=False)
+        self.log("dB_MSE", dB_MSE, on_step=False)
 
         # move tensors to cpu for logging
         outputs = {
