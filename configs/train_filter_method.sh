@@ -21,6 +21,6 @@ do
     --filter_method "$filter_method" \
     --max_epochs 500 \
     --num_train_examples "$examples" \
-    --seed 14 \
+    --seed 16 \
     --experiment_name filter_method & 
 done

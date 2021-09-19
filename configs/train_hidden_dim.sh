@@ -8,7 +8,7 @@ do
     --max_train_order 16 \
     --batch_size 128 \
     --num_workers 8 \
-    --lr 5e-6 \
+    --lr 1e-5 \
     --gradient_clip_val 0.9 \
     --gradient_clip_algorithm norm \
     --hidden_dim $hdim \
@@ -16,6 +16,6 @@ do
     --filter_method all \
     --max_epochs 500 \
     --num_train_examples 8333 \
-    --track_grad_norm 2 \
+    --seed 16 \
     --experiment_name hidden_dim &
 done

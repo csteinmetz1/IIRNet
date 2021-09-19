@@ -4,13 +4,12 @@ CUDA_VISIBLE_DEVICES=0 python train.py \
 --max_train_order 16 \
 --batch_size 128 \
 --num_workers 8 \
---lr 1e-4 \
+--lr 1e-5 \
 --gradient_clip_val 0.9 \
 --gradient_clip_algorithm norm \
 --hidden_dim 1024 \
 --shuffle \
---filter_method uniform_parametric \
+--filter_method normal_biquad \
 --max_epochs 500 \
 --num_train_examples 50000 \
---track_grad_norm 2 \
---experiment_name filter_method
+--experiment_name hidden_dim
