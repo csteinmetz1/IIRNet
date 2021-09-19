@@ -71,7 +71,7 @@ def evaluate_on_dataset(
             if model_name in ["Yule-Walker", "SGD (1000)"]:
                 pred_sos = model(mag_dB.view(1, 1, -1))
             else:
-                pred_sos = model(mag_dB_norm.view(1, 1, -1))
+                pred_sos, _ = model(mag_dB_norm.view(1, 1, -1))
         toc = time.perf_counter()
         elapsed = toc - tic
 
@@ -83,7 +83,6 @@ def evaluate_on_dataset(
             "Yule-Walker",
             "SGD (1000)",
         ]:
-            print("use oriignal dB")
             target_dB = mag_dB.squeeze().to(pred_dB.device)
         else:  # use SOS
             _, target_dB = signal.sosfreqz(sos.squeeze(), worN=mag_dB.shape[-1])
