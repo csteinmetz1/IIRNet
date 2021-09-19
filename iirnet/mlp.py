@@ -58,7 +58,7 @@ class MLPModel(IIRNet):
         sos = x.view(-1, n_sections, 6)
 
         # extract gains, offset from 1
-        g = 10 * torch.sigmoid(sos[:, :, 0])
+        g = 100 * torch.sigmoid(sos[:, :, 0])
 
         # all gains are held at 1 except first
         g[:, 1:] = 1.0
