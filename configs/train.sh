@@ -1,15 +1,16 @@
 CUDA_VISIBLE_DEVICES=0 python train.py \
 --gpus 1 \
---model_order 16 \
---max_train_order 16 \
+--model_order 64 \
+--max_train_order 64 \
 --batch_size 128 \
 --num_workers 8 \
---lr 1e-5 \
+--lr 1e-6 \
 --gradient_clip_val 0.9 \
 --gradient_clip_algorithm norm \
---hidden_dim 1024 \
+--hidden_dim 2048 \
 --shuffle \
---filter_method normal_biquad \
+--filter_method all \
 --max_epochs 500 \
---num_train_examples 50000 \
+--num_train_examples 8333 \
+--resume_from_checkpoint logs/filter_order/epochs=500_filter-method=all_filter-order=64_hidden-dim=2048/lightning_logs/version_0/checkpoints/all-epoch=155-step=60995.ckpt \
 --experiment_name hidden_dim
