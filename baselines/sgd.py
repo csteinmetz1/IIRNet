@@ -1,6 +1,6 @@
 import time
 import torch
-
+import numpy as np
 from iirnet.loss import LogMagTargetFrequencyLoss
 
 
@@ -10,10 +10,10 @@ class SGDFilterDesign(torch.nn.Module):
     def __init__(
         self,
         n_iters=1000,
-        lr=2e-5,
+        lr=5e-4,
         schedule_lr=False,
         pole_zero=True,
-        verbose=True,
+        verbose=False,
         order=16,
     ):
         super(SGDFilterDesign, self).__init__()
@@ -29,11 +29,16 @@ class SGDFilterDesign(torch.nn.Module):
     def init_sos(self):
         # create the biquad poles and zeros we will optimize
         self.sos = torch.nn.Parameter(torch.ones(1, self.order, 6, requires_grad=True))
-        # with torch.no_grad():
-        #    self.sos.data.uniform_(0.5, 0.9)
+        with torch.no_grad():
+            self.sos.data.uniform_(0.1, 0.9)
+            mask = torch.tensor(np.random.choice([1, -1], size=(1, self.order, 6)))
+            self.sos.data *= mask * torch.ones(1, self.order, 6)
 
         # setup optimization
         self.optimizer = torch.optim.SGD([self.sos], lr=self.lr)
+        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            self.optimizer, self.n_iters
+        )
 
     def __call__(self, target_dB):
 
@@ -42,7 +47,10 @@ class SGDFilterDesign(torch.nn.Module):
             target_dB = target_dB.to(self.sos.device)
             for n in range(self.n_iters):
                 if self.pole_zero:
-                    g = self.sos[:, :, 0] + 1
+                    g = 100 * torch.sigmoid(self.sos[:, :, 0])  # + 1.0
+                    # all gains are held at 1 except first
+                    g[:, 1:] = 1.0
+
                     poles_real = self.sos[:, :, 1]
                     poles_imag = self.sos[:, :, 2]
                     zeros_real = self.sos[:, :, 3]
