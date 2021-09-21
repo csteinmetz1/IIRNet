@@ -6,7 +6,6 @@ import scipy.stats as stats
 
 from numpy import linalg as LA
 from scipy.stats import loguniform
-from numpy.random import default_rng
 
 
 def generate_pass_filter(num_points=512, max_order=2):
@@ -51,7 +50,6 @@ def generate_parametric_eq(num_points, max_order, f_s=48000):
         mag
         phs
     """
-    rng = default_rng()
     zeros = []
     poles = []
     sos_holder = []
@@ -68,10 +66,12 @@ def generate_parametric_eq(num_points, max_order, f_s=48000):
     num_peaks = (max_order) // 2 - 2  # Number of peaking filters to use paper=10
 
     ##Low Shelf Filter
-    f_low = rng.beta(0.25, 5) * (f_max - f_min) + f_min
+    f_low = np.random.beta(0.25, 5) * (f_max - f_min) + f_min
     omega_low = 2 * np.pi * f_low / f_s
-    g = rng.binomial(1, bern_shelf) * (rng.beta(5, 5) * (g_max - g_min) + g_min)
-    q = rng.beta(1, 5) * (q_max_shelf - q_min) + q_min
+    g = np.random.binomial(1, bern_shelf) * (
+        np.random.beta(5, 5) * (g_max - g_min) + g_min
+    )
+    q = np.random.beta(1, 5) * (q_max_shelf - q_min) + q_min
     A = np.power(10, g / 40)
     alpha = np.sin(omega_low) * np.sqrt((A ** 2 + 1) * ((1 / q) - 1) + 2 * A)
 
@@ -91,10 +91,12 @@ def generate_parametric_eq(num_points, max_order, f_s=48000):
     poles.append(den_poly)
 
     ##High Shelf Filter
-    f_high = rng.beta(4, 5) * (f_max - f_min) + f_min
+    f_high = np.random.beta(4, 5) * (f_max - f_min) + f_min
     omega_high = 2 * np.pi * f_high / f_s
-    g = rng.binomial(1, bern_shelf) * (rng.beta(5, 5) * (g_max - g_min) + g_min)
-    q = rng.beta(1, 5) * (q_max_shelf - q_min) + q_min
+    g = np.random.binomial(1, bern_shelf) * (
+        np.random.beta(5, 5) * (g_max - g_min) + g_min
+    )
+    q = np.random.beta(1, 5) * (q_max_shelf - q_min) + q_min
     A = np.power(10, g / 40)
     alpha = np.sin(omega_high) * np.sqrt((A ** 2 + 1) * ((1 / q) - 1) + 2 * A)
 
@@ -115,10 +117,12 @@ def generate_parametric_eq(num_points, max_order, f_s=48000):
 
     ##Peaking Filters
     for jj in range(num_peaks):
-        f_peak = rng.uniform(low=f_low, high=f_high)
+        f_peak = np.random.uniform(low=f_low, high=f_high)
         omega = 2 * np.pi * f_peak / f_s
-        g = rng.binomial(1, bern_peak) * (rng.beta(5, 5) * (g_max - g_min) + g_min)
-        q = rng.beta(1, 5) * (q_max_peak - q_min) + q_min
+        g = np.random.binomial(1, bern_peak) * (
+            np.random.beta(5, 5) * (g_max - g_min) + g_min
+        )
+        q = np.random.beta(1, 5) * (q_max_peak - q_min) + q_min
 
         alpha = np.sin(omega) / (2 * q)
         A = np.power(10, g / 40)
@@ -150,14 +154,13 @@ def generate_parametric_eq(num_points, max_order, f_s=48000):
     return mag, phs, real, imag, sos
 
 
-def generate_normal_biquad(num_points, max_order, min_order=None, norm=1.0):
+def generate_normal_biquad(num_points, max_order, min_order=None, norm=1.0, seed=0):
 
-    rng = default_rng()
     if min_order == None:
         chosen_ord = max_order
     else:
-        chosen_ord = rng.randint(min_order, max_order)
-    sos = rng.normal(scale=norm, size=(chosen_ord // 2, 6))
+        chosen_ord = np.random.randint(min_order, max_order)
+    sos = np.random.normal(scale=norm, size=(chosen_ord // 2, 6))
 
     a0 = sos[:, 3].reshape(-1, 1)
     sos = sos / a0
@@ -172,7 +175,7 @@ def generate_normal_biquad(num_points, max_order, min_order=None, norm=1.0):
     return mag, phs, real, imag, sos
 
 
-def generate_uniform_parametric_eq(num_points, max_order, f_s=48000):
+def generate_uniform_parametric_eq(num_points, max_order, f_s=48000, seed=0):
     """Generate a random parametric EQ cascase according to the method specified in
     [Nercessian 2020](https://dafx2020.mdw.ac.at/proceedings/papers/DAFx2020_paper_7.pdf).
 
@@ -181,7 +184,6 @@ def generate_uniform_parametric_eq(num_points, max_order, f_s=48000):
         mag
         phs
     """
-    rng = default_rng()
     zeros = []
     poles = []
     sos_holder = []
@@ -198,13 +200,13 @@ def generate_uniform_parametric_eq(num_points, max_order, f_s=48000):
     num_peaks = (max_order) // 2 - 2  # Number of peaking filters to use paper=10
 
     ##Low Shelf Filter
-    # f_low = rng.beta(0.25,5)*(f_max-f_min)+f_min
+    # f_low = np.random.beta(0.25,5)*(f_max-f_min)+f_min
     # omega_low = 2*np.pi*f_low/f_s
-    omega_low = rng.uniform(low=0.0, high=np.pi)
-    # g = rng.binomial(1,bern_shelf)*(rng.beta(5,5)*(g_max-g_min)+g_min)
-    g = rng.uniform(low=-10.0, high=10.0)
-    # q = rng.beta(1,5)*(q_max_shelf-q_min)+q_min
-    q = rng.uniform(low=0.1, high=1.0)
+    omega_low = np.random.uniform(low=0.0, high=np.pi)
+    # g = np.random.binomial(1,bern_shelf)*(np.random.beta(5,5)*(g_max-g_min)+g_min)
+    g = np.random.uniform(low=-10.0, high=10.0)
+    # q = np.random.beta(1,5)*(q_max_shelf-q_min)+q_min
+    q = np.random.uniform(low=0.1, high=1.0)
     A = np.power(10, g / 40)
     alpha = np.sin(omega_low) * np.sqrt((A ** 2 + 1) * ((1 / q) - 1) + 2 * A)
 
@@ -224,13 +226,13 @@ def generate_uniform_parametric_eq(num_points, max_order, f_s=48000):
     poles.append(den_poly)
 
     ##High Shelf Filter
-    # f_high = rng.beta(4,5)*(f_max-f_min)+f_min
+    # f_high = np.random.beta(4,5)*(f_max-f_min)+f_min
     # omega_high = 2*np.pi*f_high/f_s
-    omega_high = rng.uniform(low=0.0, high=np.pi)
-    # g = rng.binomial(1,bern_shelf)*(rng.beta(5,5)*(g_max-g_min)+g_min)
-    g = rng.uniform(low=-10.0, high=10.0)
-    # q = rng.beta(1,5)*(q_max_shelf-q_min)+q_min
-    q = rng.uniform(low=0.1, high=1.0)
+    omega_high = np.random.uniform(low=0.0, high=np.pi)
+    # g = np.random.binomial(1,bern_shelf)*(np.random.beta(5,5)*(g_max-g_min)+g_min)
+    g = np.random.uniform(low=-10.0, high=10.0)
+    # q = np.random.beta(1,5)*(q_max_shelf-q_min)+q_min
+    q = np.random.uniform(low=0.1, high=1.0)
     A = np.power(10, g / 40)
     alpha = np.sin(omega_high) * np.sqrt((A ** 2 + 1) * ((1 / q) - 1) + 2 * A)
 
@@ -251,13 +253,13 @@ def generate_uniform_parametric_eq(num_points, max_order, f_s=48000):
 
     ##Peaking Filters
     for jj in range(num_peaks):
-        # f_peak = rng.uniform(low=f_low,high=f_high)
+        # f_peak = np.random.uniform(low=f_low,high=f_high)
         # omega = 2*np.pi*f_peak/f_s
-        omega = rng.uniform(low=0.0, high=np.pi)
-        # g = rng.binomial(1,bern_peak)*(rng.beta(5,5)*(g_max-g_min)+g_min)
-        g = rng.uniform(low=-10, high=10)
-        # q = rng.beta(1,5)*(q_max_peak-q_min)+q_min
-        q = rng.uniform(low=0.1, high=3.0)
+        omega = np.random.uniform(low=0.0, high=np.pi)
+        # g = np.random.binomial(1,bern_peak)*(np.random.beta(5,5)*(g_max-g_min)+g_min)
+        g = np.random.uniform(low=-10, high=10)
+        # q = np.random.beta(1,5)*(q_max_peak-q_min)+q_min
+        q = np.random.uniform(low=0.1, high=3.0)
 
         alpha = np.sin(omega) / (2 * q)
         A = np.power(10, g / 40)
@@ -290,16 +292,15 @@ def generate_uniform_parametric_eq(num_points, max_order, f_s=48000):
 
 
 def generate_characteristic_poly_filter(
-    num_points, max_order, min_order=None, eps=1e-8
+    num_points, max_order, min_order=None, eps=1e-8, seed=0
 ):
-    rng = default_rng()
     norm = 1.0  ##SHOULD BE HYPERPARAMETER
     sos = []
 
     if min_order == None:
         chosen_ord = max_order
     else:
-        chosen_ord = rng.randint(low=min_order, high=max_order)
+        chosen_ord = np.random.randint(low=min_order, high=max_order)
 
     num_ord = chosen_ord
     den_ord = chosen_ord
@@ -307,8 +308,8 @@ def generate_characteristic_poly_filter(
 
     all_num = np.zeros(chosen_max, dtype=np.cdouble)
     all_den = np.zeros(chosen_max, dtype=np.cdouble)
-    num_char_matrix = rng.normal(size=(num_ord, num_ord))
-    den_char_matrix = rng.normal(size=(den_ord, den_ord))
+    num_char_matrix = np.random.normal(size=(num_ord, num_ord))
+    den_char_matrix = np.random.normal(size=(den_ord, den_ord))
     num_w, _ = LA.eig(num_char_matrix)
     den_w, _ = LA.eig(den_char_matrix)
     sort_num = np.argsort(-1 * np.abs(np.imag(num_w)))
@@ -360,8 +361,6 @@ def generate_uniform_disk_filter(
     log=False,
     fs=44100,
 ):
-
-    rng = default_rng()
 
     ##a and b are used for the loguniform sampling
     a = min_freq / (
@@ -432,8 +431,6 @@ def generate_uniform_mag_disk_filter(
     log=False,
     fs=44100,
 ):
-
-    rng = default_rng()
 
     ##a and b are used for the loguniform sampling
     a = min_freq / (
@@ -543,15 +540,15 @@ def generate_normal_poly_filter(
     max_order,
     min_order=None,
     eps=1e-8,
+    seed=42,
 ):
-    rng = default_rng()
     sos = []
     if min_order == None:
         chosen_ord = max_order
     else:
-        chosen_ord = rng.randint(low=min_order, high=max_order)
-    num_poly = rng.normal(size=chosen_ord + 1)
-    den_poly = rng.normal(size=chosen_ord + 1)
+        chosen_ord = np.random.randint(low=min_order, high=max_order)
+    num_poly = np.random.normal(size=chosen_ord + 1)
+    den_poly = np.random.normal(size=chosen_ord + 1)
     num_w = np.roots(num_poly)
     den_w = np.roots(den_poly)
     sort_num = np.argsort(-1 * np.abs(np.imag(num_w)))

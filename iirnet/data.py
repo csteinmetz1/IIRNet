@@ -59,7 +59,7 @@ class IIRFilterDataset(torch.utils.data.Dataset):
         if self.precompute:
             self.examples = []
             params = list(repeat((num_points, max_order), times=self.num_examples))
-            with multiprocessing.Pool(processes=24) as pool:
+            with multiprocessing.Pool(processes=1) as pool:
                 self.examples = pool.starmap(self.generate_filter, params)
             print(f"Generated {len(self.examples)} examples.")
 

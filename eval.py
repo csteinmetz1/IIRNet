@@ -41,7 +41,7 @@ def evaluate_on_dataset(
     seed: int = 42,
 ):
 
-    # pl.seed_everything(seed)
+    pl.seed_everything(seed)
 
     errors = []
     timings = []
@@ -68,7 +68,13 @@ def evaluate_on_dataset(
         # predict filter coeffieicnts (do timings here)
         tic = time.perf_counter()
         with torch.no_grad():
-            if model_name in ["Yule-Walker", "SGD (1000)"]:
+            if model_name in [
+                "Yule-Walker",
+                "SGD (1)",
+                "SGD (10)",
+                "SGD (100)",
+                "SGD (1000)",
+            ]:
                 pred_sos = model(mag_dB.view(1, 1, -1))
             else:
                 pred_sos, _ = model(mag_dB_norm.view(1, 1, -1))
@@ -172,7 +178,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--filter_order",
         help="Filter order to use for Yule-Walker and SGD",
-        default=42,
+        default=16,
         type=int,
     )
 
@@ -189,7 +195,7 @@ if __name__ == "__main__":
 
     # fixed evaluation parameters
     num_points = 512
-    max_eval_order = 16
+    max_eval_order = args.filter_order
     examples_per_method = args.examples
     precompute = True
     shuffle = False
@@ -249,12 +255,12 @@ if __name__ == "__main__":
     )
 
     datasets = {
-        "normal_poly": val_datasetA,
-        "normal_biquad": val_datasetB,
-        "uniform_disk": val_datasetC,
-        "uniform_mag_disk": val_datasetD,
-        "char_poly": val_datasetE,
-        "uniform_parametric": val_datasetF,
+        # "normal_poly": val_datasetA,
+        # "normal_biquad": val_datasetB,
+        # "uniform_disk": val_datasetC,
+        # "uniform_mag_disk": val_datasetD,
+        # "char_poly": val_datasetE,
+        # "uniform_parametric": val_datasetF,
         "all": [
             val_datasetA,
             val_datasetB,
@@ -287,10 +293,10 @@ if __name__ == "__main__":
     if args.yw:
         models["Yule-Walker"] = YuleWalkerFilterDesign(N=args.filter_order)
     if args.sgd:
-        # models["SGD (1)"] = SGDFilterDesign(n_iters=1, order=args.filter_order)
-        # models["SGD (10)"] = SGDFilterDesign(n_iters=10, order=args.filter_order)
-        # models["SGD (100)"] = SGDFilterDesign(n_iters=100, order=args.filter_order)
-        models["SGD (1000)"] = SGDFilterDesign(n_iters=200, order=args.filter_order)
+        models["SGD (1)"] = SGDFilterDesign(n_iters=1, order=args.filter_order)
+        models["SGD (10)"] = SGDFilterDesign(n_iters=10, order=args.filter_order)
+        models["SGD (100)"] = SGDFilterDesign(n_iters=100, order=args.filter_order)
+        models["SGD (1000)"] = SGDFilterDesign(n_iters=1000, order=args.filter_order)
 
     # get all models from the experiment
     model_dirs = glob.glob(os.path.join(args.experiment_dir, "*"))
@@ -331,6 +337,7 @@ if __name__ == "__main__":
             f"Evaluating {model_name} model  {count_parameters(model)/1e6:0.2f} M parameters"
         )
         # evaluate on synthetic datasets
+        avg = []
         for dataset_name, dataset in datasets.items():
             sys.stdout.write(f"{dataset_name} dataset ")
             errors, elapsed = evaluate_on_dataset(
@@ -351,6 +358,7 @@ if __name__ == "__main__":
                 "mean_elapsed": np.mean(elapsed),
                 "std_elapsed": np.std(elapsed),
             }
+            avg.append(np.mean(errors))
             sys.stdout.write(f"{np.mean(errors):0.2f} \n")
             if dataset_name not in ["hrtf", "guitar_cab"]:
                 synthetic_errors += errors
@@ -361,10 +369,14 @@ if __name__ == "__main__":
             "mean_elapsed": np.mean(synthetic_elapsed),
         }
 
+        results[model_name]["avg"] = np.mean(avg)
+
         # print(
         #    f"""MSE: {np.mean(synthetic_errors):0.2f} dB  Time: {np.mean(synthetic_elapsed)*1e3:0.2f} ms"""
         # )
-        print(f"Time: {np.mean(synthetic_elapsed)*1e3:0.2f} ms")
+        print(
+            f"Avg MSE: {np.mean(avg):0.2f} | Time: {np.mean(synthetic_elapsed)*1e3:0.2f} ms"
+        )
 
     with open(f"results/results_{experiment_name}.pkl", "wb") as handle:
         pickle.dump(results, handle, protocol=pickle.HIGHEST_PROTOCOL)
