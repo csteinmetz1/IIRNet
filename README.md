@@ -2,7 +2,7 @@
 
 # IIRNet
 
-<img width="500px" src="docs/iirnet-arch.svg">
+<img width="250px" src="docs/iirnet-vertical.svg">
 
 Direct design of biquad filter cascades with neural networks by sampling random polynomials.
 
