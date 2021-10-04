@@ -249,10 +249,8 @@ if __name__ == "__main__":
         precompute=precompute,
     )
 
-    val_guitar_cab_datatset = FIRFilterDataset("data/KCIRs_16bit")
-    val_hrtf_datatset = FIRFilterDataset(
-        "data/HRTF/IRC_1059/COMPENSATED/WAV/IRC_1059_C"
-    )
+    val_guitar_cab_datatset = FIRFilterDataset("data/GtrCab")
+    val_hrtf_datatset = FIRFilterDataset("data/HRTF/IRC_1059_C")
 
     datasets = {
         # "normal_poly": val_datasetA,
