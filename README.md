@@ -42,8 +42,19 @@ Note, you may need to install 7z if you don't already have it.
 Next download the pre-trained checkpoints if you haven't already.
 
 ```
-wget link/to/zenodo
-unzip logs.zip
+mkdir logs
+cd logs 
+wget https://zenodo.org/record/5550275/files/filter_method.zip
+wget https://zenodo.org/record/5550275/files/filter_order.zip
+wget https://zenodo.org/record/5550275/files/hidden_dim.zip
+
+unzip filter_method.zip
+unzip filter_order.zip
+unzip hidden_dim.zip
+
+rm filter_method.zip
+rm filter_order.zip
+rm hidden_dim.zip
 ```
 
 Now you can run the evaluation on checkpoints from the three different experiments as follows.
