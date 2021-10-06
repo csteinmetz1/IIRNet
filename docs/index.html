@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="keywords" content="">
+    <meta name="author" content="Christian Steinmetz">
+
+    <title>Direct design of biquad filter cascades with deep learning by sampling random polynomials</title>
+    <!-- Bootstrap core CSS -->
+    <!--link href="bootstrap.min.css" rel="stylesheet"-->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+    <style>
+        td th {
+            height: 80px;
+            width: 160px;
+            text-align: center;
+            vertical-align: middle;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div class="text-center">
+        <div class="container">
+            <div class="text-wrap" width="200px">
+                <h1 class="pt-5">Direct design of biquad filter cascades with deep learning by
+                    sampling random
+                    polynomials
+                </h1>
+            </div>
+
+            <p style="font-size: 1.3em; margin-bottom: 0;">
+                <a href="https://www.josephtcolonel.com/"> Joseph Colonel</a><sup>1</sup> &nbsp
+                <a href="http://www.christiansteinmetz.com"> Christian J. Steinmetz</a><sup>1</sup> <br> &nbsp
+                <a href="https://marcusmichelen.org/"> Marcus Michelen</a><sup>2</sup> &nbsp
+                <a href="http://www.eecs.qmul.ac.uk/~josh/"> Joshua D. Reiss</a><sup>1</sup> &nbsp
+            </p>
+            <p style="margin-top: 0;">
+                <sup>1</sup>Centre for Digital Music, Queen Mary University of London <br>
+                <sup>2</sup>Department of Mathematics, Statistics, and Computer Science, University of Illinois at
+                Chicago
+            </p>
+
+            <h5 class="" style="color: black;" role="group" aria-label="Top menu">
+                <a class="" target="blank_" href="https://arxiv.org/abs/">arXiv</a> &#183;
+                <a class="" target="blank_" href="https://github.com/csteinmetz1/iirnet">GitHub</a> &#183;
+                <a class="" target="blank_" href="#">Colab
+                </a>
+                <!-- https://colab.research.google.com/github/csteinmetz1/steerable-nafx/blob/master/steerable-nafx.ipynb -->
+            </h5>
+            <div class="pt-5">
+                <img class="img-fluid" width="550px" src='assets/iirnet-vertical-layers.svg'>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-4 " style="max-width: 950px; margin-left: auto; margin-right: auto;">
+        <div class="container">
+            <div class="section">
+
+                <h5 class="text-center">Abstract</h5>
+                <hr>
+                <p class="pr-5 pl-5">
+                    Designing infinite impulse response filters to match an arbitrary magnitude response requires
+                    specialized techniques.
+                    Methods like modified Yule-Walker are relatively efficient, but may not be sufficiently accurate in
+                    matching high order responses.
+                    On the other hand, iterative optimization techniques often enable superior performance, but come at
+                    the cost of longer run-times and are sensitive to initial conditions, requiring manual tuning.
+                    In this work, we address some of these limitations by learning a direct mapping from the target
+                    magnitude response to the filter coefficient space with a neural network trained on millions of
+                    random filters.
+                    We demonstrate our approach enables both fast and accurate estimation of filter coefficients given a
+                    desired response.
+                    We investigate training with different families of random filters, and find training with a variety
+                    of filter families enables better generalization when estimating real-world filters, using
+                    head-related transfer functions and guitar cabinets as case studies.
+                    We compare our method against existing methods including modified Yule-Walker and gradient descent
+                    and show IIRNet is, on average, both faster and more accurate.
+
+                </p>
+
+            </div>
+
+
+            <!-- 
+      <h2>Demo</h2>
+      <hr>
+      <div class=" embed-responsive embed-responsive-16by9">
+        <iframe width="560" height="315" src="https://youtube.com" frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen></iframe>
+      </div>
+      -->
+
+            <div class="section ">
+
+            </div>
+
+            <div class="section">
+                <h2>Bibtex</h2>
+                <hr>
+                <div style="background-color: #e9ecef;">
+                    <pre>
+                <code>
+  @inproceedings{colonel2021iirnet,
+    title={Direct design of biquad filter cascades with deep learning by sampling random polynomials},
+    author={Colonel, Joseph and Steinmetz, Christian J. and Michelen, Marcus and Reiss, Joshua D.},
+    booktitle={},
+    year={2021}}</code>
+          </pre>
+                </div>
+            </div>
+
+            <hr>
+            <footer>
+                <p>*Submitted to the ICASSP 2022
+                    <!-- <br> Send feedback and questions to <a href="http://christiansteinmetz.com">Christian Steinmetz</a>. -->
+                </p>
+
+                <div class="container">
+                    <div class="row m-3 justify-content-center">
+                        <img class="m-3 text-center" src="assets/logos/qm.png" height="50px">
+                        <img class="m-3 text-center" src="assets/logos/aim.png" height="50px">
+                        <img class="m-3 text-center" src="assets/logos/ukri.png" height="50px">
+                        <img class="m-3 text-center" src="assets/logos/yamahalogo.png" height="50px">
+                        <p>Supported by the EPSRC UKRI Centre for Doctoral Training in Artificial Intelligence and
+                            Music
+                            (EP/S022694/1) <br> and the Research and Development Division of Yamaha Corporation, Japan.
+                        </p>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="https://cdn.rawgit.com/pcooksey/bibtex-js/5ccf967/src/bibtex_js.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+        integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+        integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"
+        integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
+        crossorigin="anonymous"></script>
+
+</body>
+
+</html>
