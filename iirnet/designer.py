@@ -46,6 +46,7 @@ class Designer:
         self,
         n: int,
         m: list,
+        mode: str = "linear",
         output: str = "sos",
     ):
 
@@ -59,7 +60,7 @@ class Designer:
             raise ValueError(f"m must have only one dimension. Found {m.ndim}.")
 
         # interpolate the magnitude specification to fit 512
-        m_int = torch.nn.functional.interpolate(m.view(1, 1, -1), 512)
+        m_int = torch.nn.functional.interpolate(m.view(1, 1, -1), 512, mode=mode)
 
         # normalize the target response
         m_int = m_int.clamp(-128.0, 128.0)
