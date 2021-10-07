@@ -1,12 +1,13 @@
 <div  align="center">
 
 # IIRNet
+Direct design of biquad filter cascades with deep learning by sampling random polynomials.
+
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/csteinmetz1/ronn/blob/master/demos/demo.ipynb)
+[![arXiv](https://img.shields.io/badge/arXiv-2010.04237-b31b1b.svg)](https://arxiv.org/abs/)
 
 <img width="450px" src="docs/assets/iirnet-vertical-layers.svg">
-
-Direct design of biquad filter cascades with neural networks by sampling random polynomials.
-
-[[PDF]()]
 
 </div>
 
@@ -19,7 +20,7 @@ pip install .
 
 ### Filter design 
 Start designing filters with just a few lines of code. 
-In this example (`demo.py`) we create a 32nd order IIR filter 
+In this example ([`demos/basic.py`](demos/basic.py) ) we create a 32nd order IIR filter 
 to match an arbitrary response that we define over a few points. 
 Internally, this specification will be interpolated to 512 points. 
 
@@ -56,13 +57,19 @@ plt.plot(w, m_int.view(-1), label="Specification")
 
 <img src="docs/assets/demo.svg">
 
-See `demo.py` for the full script.
+See [`demos/basic.py`](demos/basic.py) for the full script.
 
 ### Training
 
 We provide a set of shell scripts that will launch training jobs 
 that reproduce the experiments from the paper in `configs/`.
 These should be launched from the top level after installing. 
+
+```Bash
+./configs/train_hidden_dim.sh
+./configs/filter_method.sh
+./configs/filter_order.sh
+```
 
 ### Evaluation
 Running the evaluation will require both the pre-trained models (or models you trained yourself)
