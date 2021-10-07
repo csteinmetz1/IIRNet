@@ -12,15 +12,16 @@ class Designer:
         # assume checkpoints are stored in logs/
         if not os.path.isdir(os.path.join("logs", "filter_order")):
             print("No checkpoints found. Downloading...")
-            os.makedirs("logs")
+            if not os.path.isdir("logs"):
+                os.makedirs("logs")
             zippath = wget.download(
                 "https://zenodo.org/record/5550275/files/filter_order.zip",
-                output="logs",
+                out="logs/",
             )
-
+            print("Done.")
             with zipfile.ZipFile(zippath, "r") as zip_ref:
                 zip_ref.extractall("logs")
-
+            print("Extracted.")
         # get all the checkpoints for each order
         ckpt_dirs = glob.glob(os.path.join("logs", "filter_order", "*"))
         ckpt_dirs = [c for c in ckpt_dirs if os.path.isdir(c)]
