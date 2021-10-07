@@ -85,3 +85,12 @@ Note: Requires PyTorch >=1.8
 | (D) | Uniform magnitude disk |  `uniform_mag_disk`   |
 | (E) | Characteristic         |  `char_poly`          |
 | (F) | Uniform parametric     |  `uniform_parametric` |
+
+## Citation
+```
+ @article{colonel2021iirnet,
+    title={Direct design of biquad filter cascades with deep learning by sampling random polynomials},
+    author={Colonel, Joseph and Steinmetz, Christian J. and Michelen, Marcus and Reiss, Joshua D.},
+    booktitle={arXiv},
+    year={2021}}
+````
