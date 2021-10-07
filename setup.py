@@ -35,6 +35,7 @@ setup(
         "pytorch_lightning",
         "scipy",
         "matplotlib",
+        "wget",
     ],
     include_package_data=True,
     license="Apache License 2.0",

@@ -24,7 +24,7 @@ class MLPModel(IIRNet):
         self.save_hyperparameters()
 
         self.layers = torch.nn.ModuleList()
-        print(f"Layers: {num_layers+1}")
+        # print(f"Layers: {num_layers+1}")
 
         for n in range(self.hparams.num_layers):
             in_features = self.hparams.hidden_dim if n != 0 else self.hparams.num_points
