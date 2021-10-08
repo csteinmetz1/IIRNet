@@ -27,7 +27,7 @@ setup(
     author_email=EMAIL,
     python_requires=REQUIRES_PYTHON,
     url=URL,
-    packages=["iirnet"],
+    packages=["iirnet", "iirnet/baselines"],
     install_requires=[
         "torch",
         "torchaudio",

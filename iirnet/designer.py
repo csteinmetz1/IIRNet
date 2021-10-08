@@ -59,8 +59,13 @@ class Designer:
         if m.ndim > 1:
             raise ValueError(f"m must have only one dimension. Found {m.ndim}.")
 
+        m = m.view(1, 1, -1)
+
         # interpolate the magnitude specification to fit 512
-        m_int = torch.nn.functional.interpolate(m.view(1, 1, -1), 512, mode=mode)
+        if m.shape[-1] != 512:
+            m_int = torch.nn.functional.interpolate(m, 512, mode=mode)
+        else:
+            m_int = m
 
         # normalize the target response
         m_int = m_int.clamp(-128.0, 128.0)

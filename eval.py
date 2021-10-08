@@ -17,8 +17,8 @@ from iirnet.data import IIRFilterDataset
 from iirnet.plotting import plot_responses
 import iirnet.signal as signal
 
-from baselines.sgd import SGDFilterDesign
-from baselines.yw import YuleWalkerFilterDesign
+from iirnet.baselines.sgd import SGDFilterDesign
+from iirnet.baselines.yw import YuleWalkerFilterDesign
 
 
 def count_parameters(model):
