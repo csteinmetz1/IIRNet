@@ -4,8 +4,8 @@
 Direct design of biquad filter cascades with deep learning by sampling random polynomials.
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/csteinmetz1/ronn/blob/master/demos/demo.ipynb)
-[![arXiv](https://img.shields.io/badge/arXiv-2010.04237-b31b1b.svg)](https://arxiv.org/abs/)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/csteinmetz1/IIRNet/blob/main/demos/demo.ipynb)
+[![arXiv](https://img.shields.io/badge/arXiv-2110.03691-b31b1b.svg)](https://arxiv.org/abs/2110.03691)
 
 <img width="450px" src="docs/assets/iirnet-vertical-layers.svg">
 
@@ -137,6 +137,6 @@ Note: Requires PyTorch >=1.8
  @article{colonel2021iirnet,
     title={Direct design of biquad filter cascades with deep learning by sampling random polynomials},
     author={Colonel, Joseph and Steinmetz, Christian J. and Michelen, Marcus and Reiss, Joshua D.},
-    booktitle={arXiv},
+    booktitle={arXiv:2110.03691},
     year={2021}}
 ````
