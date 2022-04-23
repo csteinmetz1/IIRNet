@@ -7,22 +7,45 @@ Direct design of biquad filter cascades with deep learning by sampling random po
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/csteinmetz1/IIRNet/blob/main/demos/demo.ipynb)
 [![arXiv](https://img.shields.io/badge/arXiv-2110.03691-b31b1b.svg)](https://arxiv.org/abs/2110.03691)
 
-<img width="450px" src="docs/assets/iirnet-vertical-layers.svg">
+<a href="https://www.youtube.com/watch?v=B_fRxHZMJ9k" target="_blank"><img width="650px" src="docs/assets/thumbnail.png"></a>
+
+Click here to watch the paper video explanation.
+
 
 </div>
+
+
+## Citation
+
+If you use any of our code in your work please consider citing us.
+
+```
+  @inproceedings{colonel2021iirnet,
+    title={Direct design of biquad filter cascades with deep learning by sampling random polynomials},
+    author={Colonel, Joseph and Steinmetz, Christian J. and Michelen, Marcus and Reiss, Joshua D.},
+    booktitle={ICASSP},
+    year={2022}}
+```
 
 ## Usage
 
 ```bash
 git clone https://github.com/csteinmetz1/IIRNet.git
-pip install .
+cd IIRNet
+pip install -e .
 ```
 
 ### Filter design 
+
 Start designing filters with just a few lines of code. 
 In this example ([`demos/basic.py`](demos/basic.py) ) we create a 32nd order IIR filter 
 to match an arbitrary response that we define over a few points. 
 Internally, this specification will be interpolated to 512 points. 
+
+
+<div align="center">
+<img width="450px" src="docs/assets/iirnet-vertical-layers.svg">
+</div>
 
 ```Python
 import torch
@@ -131,12 +154,3 @@ Note: Requires PyTorch >=1.8
 | (D) | Uniform magnitude disk |  `uniform_mag_disk`   |
 | (E) | Characteristic         |  `char_poly`          |
 | (F) | Uniform parametric     |  `uniform_parametric` |
-
-## Citation
-```
- @article{colonel2021iirnet,
-    title={Direct design of biquad filter cascades with deep learning by sampling random polynomials},
-    author={Colonel, Joseph and Steinmetz, Christian J. and Michelen, Marcus and Reiss, Joshua D.},
-    booktitle={arXiv:2110.03691},
-    year={2021}}
-````
