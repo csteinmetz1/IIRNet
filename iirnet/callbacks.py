@@ -36,7 +36,7 @@ class LogZPKCallback(Callback):
         table += "|-----|-------|-------|-------| \n"
 
         for n in range(z.shape[0]):
-            table += f"|{n+1} | {z[n]:3.3f} | {p[n]:3.3f} | {k[n]:0.5f} | \n"
+            table += f"|{n+1} | {z[n]:3.3f} | {p[n]:3.3f} | {k:0.5f} | \n"
 
         return table
 

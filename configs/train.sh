@@ -1,7 +1,7 @@
-CUDA_VISIBLE_DEVICES=0 python train.py \
+CUDA_VISIBLE_DEVICES=1 python train.py \
 --gpus 1 \
 --model_order 32 \
---max_train_order 32 \
+--model_order 32 \
 --batch_size 128 \
 --num_workers 8 \
 --lr 1e-5 \

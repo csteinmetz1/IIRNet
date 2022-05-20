@@ -2,7 +2,7 @@ import torch
 import pytorch_lightning as pl
 from argparse import ArgumentParser
 
-from .base import IIRNet
+from .system import IIRNet
 
 class LSTMModel(IIRNet):
     """ LSTM module. """

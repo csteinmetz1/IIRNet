@@ -3,21 +3,23 @@ import random
 import pytorch_lightning as pl
 from argparse import ArgumentParser
 
-from iirnet.mlp import MLP
+from iirnet.mlp import MLPModel
 import iirnet.loss as loss
 import iirnet.plotting as plotting
 import iirnet.signal as signal
+import scipy.signal
+import numpy as np
 
 
 class System(pl.LightningModule):
-    """Base syste, module."""
+    """Base system module."""
 
     def __init__(self, **kwargs):
         super().__init__()
         self.save_hyperparameters()
 
-        self.model = MLP(
-            self.hparams.num_layers,
+        self.model = MLPModel(
+            self.hparams.num_points,
             self.hparams.num_layers,
             self.hparams.hidden_dim,
             self.hparams.model_order,
@@ -54,14 +56,37 @@ class System(pl.LightningModule):
         self.log("val_loss", loss, on_step=False)
         self.log("dB_MSE", dB_MSE, on_step=False)
 
+        if zpk is None:
+            zs = []
+            ps = []
+            ks = []
+            for n in range(sos.shape[0]):
+                z, p, k = scipy.signal.sos2zpk(sos[n, ...].cpu().numpy())
+                z = zs.append(
+                    torch.complex(
+                        torch.tensor(np.real(z)),
+                        torch.tensor(np.imag(z)),
+                    )
+                )
+                p = ps.append(
+                    torch.complex(
+                        torch.tensor(np.real(p)),
+                        torch.tensor(np.imag(p)),
+                    )
+                )
+                k = ks.append(torch.tensor(k))
+            zs = torch.stack(zs)
+            ps = torch.stack(ps)
+            ks = torch.stack(ks)
+
         # move tensors to cpu for logging
         outputs = {
             "pred_sos": pred_sos.cpu(),
             "sos": sos.cpu(),
             "mag_dB": mag_dB.cpu(),
-            "z": zpk[0].cpu(),
-            "p": zpk[1].cpu(),
-            "k": zpk[2].cpu(),
+            "z": zs,
+            "p": ps,
+            "k": ks,
         }
 
         return outputs

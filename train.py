@@ -5,9 +5,7 @@ from argparse import ArgumentParser
 import pytorch_lightning as pl
 
 from iirnet.data import IIRFilterDataset
-from iirnet.base import IIRNet
-from iirnet.mlp import MLPModel
-from iirnet.lstm import LSTMModel
+from iirnet.system import System
 from iirnet.callbacks import LogZPKCallback, LogTransferFnPlots
 
 torch.backends.cudnn.benchmark = True
@@ -24,25 +22,17 @@ if __name__ == "__main__":
     parser.add_argument("--shuffle", action="store_true")
     parser.add_argument("--precompute", action="store_true")
     parser.add_argument("--filter_method", type=str, default="char_poly")
-    parser.add_argument("--max_train_order", type=int, default=100)
     parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--num_workers", type=int, default=0)
-    parser.add_argument("--model_name", type=str, default="mlp", help="mlp or lstm")
     parser.add_argument("--num_train_examples", type=int, default=100000)
     parser.add_argument("--num_val_examples", type=int, default=1000)
     parser.add_argument("--seed", type=int, default=14)
 
     temp_args, _ = parser.parse_known_args()
 
-    # let the model add what it wants
-    if temp_args.model_name == "mlp":
-        parser = MLPModel.add_model_specific_args(parser)
-    elif temp_args.model_name == "lstm":
-        parser = LSTMModel.add_model_specific_args(parser)
-
-    parser = pl.Trainer.add_argparse_args(
-        parser
-    )  # add all the available trainer options to argparse
+    # add all the available trainer options to argparse
+    parser = System.add_model_specific_args(parser)  # add model specific args
+    parser = pl.Trainer.add_argparse_args(parser)
     args = parser.parse_args()  # parse them args
 
     # set the log/checkpoint directory
@@ -76,7 +66,7 @@ if __name__ == "__main__":
     train_datasetA = IIRFilterDataset(
         method="normal_poly",
         num_points=args.num_points,
-        max_order=args.max_train_order,
+        max_order=args.model_order,
         num_examples=args.num_train_examples,
         precompute=args.precompute,
     )
@@ -84,7 +74,7 @@ if __name__ == "__main__":
     train_datasetB = IIRFilterDataset(
         method="normal_biquad",
         num_points=args.num_points,
-        max_order=args.max_train_order,
+        max_order=args.model_order,
         num_examples=args.num_train_examples,
         precompute=args.precompute,
     )
@@ -92,7 +82,7 @@ if __name__ == "__main__":
     train_datasetC = IIRFilterDataset(
         method="uniform_disk",
         num_points=args.num_points,
-        max_order=args.max_train_order,
+        max_order=args.model_order,
         num_examples=args.num_train_examples,
         precompute=args.precompute,
     )
@@ -100,7 +90,7 @@ if __name__ == "__main__":
     train_datasetD = IIRFilterDataset(
         method="uniform_mag_disk",
         num_points=args.num_points,
-        max_order=args.max_train_order,
+        max_order=args.model_order,
         num_examples=args.num_train_examples,
         precompute=args.precompute,
     )
@@ -108,7 +98,7 @@ if __name__ == "__main__":
     train_datasetE = IIRFilterDataset(
         method="char_poly",
         num_points=args.num_points,
-        max_order=args.max_train_order,
+        max_order=args.model_order,
         num_examples=args.num_train_examples,
         precompute=args.precompute,
     )
@@ -116,7 +106,7 @@ if __name__ == "__main__":
     train_datasetF = IIRFilterDataset(
         method="uniform_parametric",
         num_points=args.num_points,
-        max_order=args.max_train_order,
+        max_order=args.model_order,
         num_examples=args.num_train_examples,
         precompute=args.precompute,
     )
@@ -154,7 +144,7 @@ if __name__ == "__main__":
     val_datasetA = IIRFilterDataset(
         method="normal_poly",
         num_points=args.num_points,
-        max_order=args.max_train_order,
+        max_order=args.model_order,
         num_examples=args.num_val_examples,
         precompute=args.precompute,
     )
@@ -162,7 +152,7 @@ if __name__ == "__main__":
     val_datasetB = IIRFilterDataset(
         method="normal_biquad",
         num_points=args.num_points,
-        max_order=args.max_train_order,
+        max_order=args.model_order,
         num_examples=args.num_val_examples,
         precompute=args.precompute,
     )
@@ -170,7 +160,7 @@ if __name__ == "__main__":
     val_datasetC = IIRFilterDataset(
         method="uniform_disk",
         num_points=args.num_points,
-        max_order=args.max_train_order,
+        max_order=args.model_order,
         num_examples=args.num_val_examples,
         precompute=args.precompute,
     )
@@ -178,7 +168,7 @@ if __name__ == "__main__":
     val_datasetD = IIRFilterDataset(
         method="uniform_mag_disk",
         num_points=args.num_points,
-        max_order=args.max_train_order,
+        max_order=args.model_order,
         num_examples=args.num_val_examples,
         precompute=args.precompute,
     )
@@ -186,7 +176,7 @@ if __name__ == "__main__":
     val_datasetE = IIRFilterDataset(
         method="char_poly",
         num_points=args.num_points,
-        max_order=args.max_train_order,
+        max_order=args.model_order,
         num_examples=args.num_val_examples,
         precompute=args.precompute,
     )
@@ -194,7 +184,7 @@ if __name__ == "__main__":
     val_datasetF = IIRFilterDataset(
         method="uniform_parametric",
         num_points=args.num_points,
-        max_order=args.max_train_order,
+        max_order=args.model_order,
         num_examples=args.num_val_examples,
         precompute=args.precompute,
     )
@@ -228,10 +218,7 @@ if __name__ == "__main__":
     )
 
     # build the model
-    if args.model_name == "mlp":
-        model = MLPModel(**vars(args))
-    elif args.model_name == "lstm":
-        model = LSTMModel(**vars(args))
+    model = System(**vars(args))
 
     # train!
     trainer.fit(model, train_dataloader, val_dataloader)

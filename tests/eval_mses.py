@@ -8,7 +8,7 @@ import soundfile as sf
 import os
 
 from iirnet.data import IIRFilterDataset
-from iirnet.base import IIRNet
+from iirnet.system import IIRNet
 from iirnet.mlp import MLPModel
 from iirnet.lstm import LSTMModel
 import iirnet.signal as signal
